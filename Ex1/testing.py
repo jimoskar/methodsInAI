@@ -4,6 +4,5 @@ for e in dict.items() :
     print(e)
 
 
-L = ["acaa", "ab"]
-L.sort()
-print(L)
+a_subset = {key: value for key, value in dict.items() if value >= 2}
+print(a_subset)

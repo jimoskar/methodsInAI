@@ -2,6 +2,8 @@ from collections import defaultdict
 
 import numpy as np
 
+import copy
+
 
 class Variable:
     def __init__(self, name, no_states, table, parents=[], no_parent_states=[]):
@@ -54,6 +56,7 @@ class Variable:
             raise ValueError("Number of table columns does not match number of parent states combinations.")
 
         if not np.allclose(self.table.sum(axis=0), 1):
+            print(self.table)
             raise ValueError("All columns in table must sum to 1.")
 
         if len(parents) != len(no_parent_states):
@@ -152,11 +155,11 @@ class BayesianNetwork:
               variables in lexicographical topological order.
         Returns: List of sorted variable names.
         """
-        vars = self.variables.copy() #To not ruin the Bayesian network.
-        edges = self.edges.copy()
+        localVars = copy.copy(self.variables)#To not ruin the Bayesian network.
+        localEdges = copy.copy(self.edges)
         L = list()
         S = list()
-        for var in vars.values():
+        for var in localVars.values():
             if not var.parents:
                 S.append(var.name)
         
@@ -164,13 +167,13 @@ class BayesianNetwork:
             S.sort() #To ensure lexical ordering
             curNode = S.pop(0)
             L.append(curNode)
-            for child in edges[vars[curNode]]:
+            for child in localEdges[localVars[curNode]]:
                 child.parents.remove(curNode) 
                 if not child.parents:
                     S.append(child.name)
 
          
-        for var in vars.values():
+        for var in localVars.values():
             if var.parents: #There are still edges.
                 raise ValueError("The network is not a DAG.")
         print(L)
@@ -184,9 +187,9 @@ class BayesianNetwork:
 
 
 class InferenceByEnumeration:
-    def __init__(self, bayesian_network):
-        self.bayesian_network = bayesian_network
-        self.topo_order = bayesian_network.sorted_nodes()
+    def __init__(self, bn):
+        self.bn = bn
+        self.topo_order = bn.sorted_nodes()
 
     def _enumeration_ask(self, X, evidence):
         # TODO: Implement Enumeration-Ask algortihm as described in Problem 4 b)
@@ -196,17 +199,41 @@ class InferenceByEnumeration:
         # it is actually passing a pointer to that variable. This means that if you want
         # to make sure that a function doesn't change the variable, you should pass a copy.
         # You can make a copy of a variable by calling variable.copy()
-        Q = [0] * self.variables[X].no_states
-        #for i in range(X.no_states):
-            #Q[i] = _enumerate_all(, evidence)
+
+    
+        n = self.bn.variables[X].no_states
+        Q = np.zeros(n)
+        vars = self.topo_order
+        for i in range(n):
+            evidence[X] = i
+            Q[i] = self._enumerate_all(vars.copy(),evidence.copy())
+        
+        print("Q:")
+        print(Q)
+        return Q/np.sum(Q) # Normalized 
+
             
 
 
     def _enumerate_all(self, vars, evidence):
-        # TODO: Implement Enumerate-All algortihm as described in Problem 4 b)
-        pass
+        if not vars:
+            return 1.0
 
+        Y = vars.pop(0)
+        Yparents = self.bn.variables[Y].parents
+        Ycondition = {key : value for key, value in evidence.items() \
+                    if key in Yparents}
 
+        if Y in evidence.keys():
+            return self.bn.variables[Y].probability(evidence[Y],Ycondition) \
+                    * self._enumerate_all(vars.copy(), evidence.copy())
+        else:
+            Ysum = 0
+            for i in range(self.bn.variables[Y].no_states):
+                evidence[Y] = i
+                Ysum += self.bn.variables[Y].probability(i, Ycondition) \
+                    * self._enumerate_all(vars.copy(), evidence.copy())
+                return Ysum
 
 
     def query(self, var, evidence={}):
@@ -215,7 +242,7 @@ class InferenceByEnumeration:
         Tabular variable instead of a vector
         """
         q = self._enumeration_ask(var, evidence).reshape(-1, 1)
-        return Variable(var, self.bayesian_network.variables[var].no_states, q)
+        return Variable(var, self.bn.variables[var].no_states, q)
 
 
 def problem3c():
@@ -254,10 +281,10 @@ def problem3c():
     bn.add_edge(d1, d2)
     bn.add_edge(d2, d3)
     bn.add_edge(d2, d4)
-    bn.add_edge(d4, d1)
+
 
     inference = InferenceByEnumeration(bn)
-    posterior = inference.query('C', {'D': 1})
+    posterior = inference.query('B', {})
 
     print(f"Probability distribution, P({d3.name} | {d4.name})")
     print(posterior)
