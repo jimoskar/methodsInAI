@@ -152,27 +152,28 @@ class BayesianNetwork:
               variables in lexicographical topological order.
         Returns: List of sorted variable names.
         """
-        edges = self.edges.copy() #To not ruin the Bayesian network.
+        vars = self.variables.copy() #To not ruin the Bayesian network.
+        edges = self.edges.copy()
         L = list()
         S = list()
-        for var in self.variables.items():
-            if prod(var.no_parent_states) == 1:
-                S.add(var)
+        for var in vars.values():
+            if not var.parents:
+                S.append(var.name)
         
         while S: #Set is not empty
-            S = sorted(S, key = operator.attrgetter("name")) #To ensure lexical ordering
-            curNode = S.pop()
+            S.sort() #To ensure lexical ordering
+            curNode = S.pop(0)
             L.append(curNode)
-            for child in edges[curNode]:
-                child.parents.pop() #assumes that parents is lexically sorted.
+            for child in edges[vars[curNode]]:
+                child.parents.remove(curNode) 
                 if not child.parents:
-                    S.append(child)
-                edges[curNode].remove(child)
-            
-            for edge_list in edges.items():
-                if edge_list: #There are still edges.
-                    raise ValueError("The network is not a DAG.")
-            
+                    S.append(child.name)
+
+         
+        for var in vars.values():
+            if var.parents: #There are still edges.
+                raise ValueError("The network is not a DAG.")
+        print(L)
         return L
 
 
@@ -195,11 +196,18 @@ class InferenceByEnumeration:
         # it is actually passing a pointer to that variable. This means that if you want
         # to make sure that a function doesn't change the variable, you should pass a copy.
         # You can make a copy of a variable by calling variable.copy()
+        Q = [0] * self.variables[X].no_states
+        #for i in range(X.no_states):
+            #Q[i] = _enumerate_all(, evidence)
+            
 
-        
 
     def _enumerate_all(self, vars, evidence):
         # TODO: Implement Enumerate-All algortihm as described in Problem 4 b)
+        pass
+
+
+
 
     def query(self, var, evidence={}):
         """
@@ -246,6 +254,7 @@ def problem3c():
     bn.add_edge(d1, d2)
     bn.add_edge(d2, d3)
     bn.add_edge(d2, d4)
+    bn.add_edge(d4, d1)
 
     inference = InferenceByEnumeration(bn)
     posterior = inference.query('C', {'D': 1})
@@ -262,3 +271,5 @@ def monty_hall():
 if __name__ == '__main__':
     problem3c()
     # monty_hall()
+
+problem3c()
