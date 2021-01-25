@@ -15,3 +15,11 @@ if l.issubset(s):
     print("true")
     print(l.union(s))
     
+l = [1,2,3]
+print(l[:1])
+
+import numpy as np
+
+a = np.zeros(2)
+
+print(np.prod(a[:0]))

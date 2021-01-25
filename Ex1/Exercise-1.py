@@ -281,7 +281,7 @@ def problem3c():
 
 
     inference = InferenceByEnumeration(bn)
-    posterior = inference.query('A', {'C' : 1, 'D' : 0})
+    posterior = inference.query('C', {'D' : 1})
 
     print(f"Probability distribution, P({d3.name} | !{d4.name})")
     print(posterior)
@@ -289,11 +289,34 @@ def problem3c():
 
 def monty_hall():
     # TODO: Implement the monty hall problem as described in Problem 4c)
-    pass
+     
+     v1 = Variable('P', 3, [[1/3],[1/3],[1/3]]) # Prize
+     v2 = Variable('CBG', 3, [[1/3],[1/3],[1/3]]) # ChosenByGuest
+     v3 = Variable('OBH', 3, [[0, 0, 0, 0, 1/2, 1, 0, 1, 1/2],
+                              [1/2, 0, 1, 0, 0, 0, 1, 0, 1/2],
+                              [1/2, 1, 0, 1, 1/2, 0, 0, 0, 0]],
+                              parents = ['CBG', 'P'],
+                              no_parent_states = [3, 3])
+    
+     bn = BayesianNetwork()
+
+     bn.add_variable(v1)
+     bn.add_variable(v2)
+     bn.add_variable(v3)
+     bn.add_edge(v1, v3)
+     bn.add_edge(v2, v3)
+
+     inference = InferenceByEnumeration(bn)
+     posterior = inference.query('P', {'CBG' : 0, 'OBH' : 2})
+     print(f"Probability distribution, P({v1.name} | {v2.name} = 0, {v3.name} = 2)")
+     print(posterior)
+
+
+
 
 
 if __name__ == '__main__':
     problem3c()
     # monty_hall()
 
-problem3c()
+monty_hall()
