@@ -230,7 +230,7 @@ class InferenceByEnumeration:
                 evidence[Y] = i
                 Ysum += self.bn.variables[Y].probability(i, Ycondition) \
                     * self._enumerate_all(vars.copy(), evidence.copy())
-                return Ysum
+            return Ysum
 
 
     def query(self, var, evidence={}):
@@ -267,7 +267,7 @@ def problem3c():
     print(d3)
 
     print(f"Probability distribution, P({d4.name} | {d2.name})")
-    print(d3)
+    print(d4)
 
     bn = BayesianNetwork()
 
@@ -281,9 +281,9 @@ def problem3c():
 
 
     inference = InferenceByEnumeration(bn)
-    posterior = inference.query('B', {})
+    posterior = inference.query('A', {'C' : 1, 'D' : 0})
 
-    print(f"Probability distribution, P({d3.name} | {d4.name})")
+    print(f"Probability distribution, P({d3.name} | !{d4.name})")
     print(posterior)
 
 
