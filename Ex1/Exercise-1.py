@@ -155,27 +155,24 @@ class BayesianNetwork:
               variables in lexicographical topological order.
         Returns: List of sorted variable names.
         """
-        localVars = copy.copy(self.variables)#To not ruin the Bayesian network.
-        localEdges = copy.copy(self.edges)
         L = list()
         S = list()
-        for var in localVars.values():
-            if not var.parents:
+        recordedParents = set()
+        for var in self.variables.values():
+            if np.prod(var.no_parent_states) == 1:
                 S.append(var.name)
+                recordedParents.add(var.name)
         
         while S: #Set is not empty
             S.sort() #To ensure lexical ordering
             curNode = S.pop(0)
             L.append(curNode)
-            for child in localEdges[localVars[curNode]]:
-                child.parents.remove(curNode) 
-                if not child.parents:
+            for child in self.edges[self.variables[curNode]]:  
+                parents = set(child.parents)  
+                if parents.issubset(recordedParents):
                     S.append(child.name)
-
-         
-        for var in localVars.values():
-            if var.parents: #There are still edges.
-                raise ValueError("The network is not a DAG.")
+                    recordedParents.add(child.name)
+        print("L:")
         print(L)
         return L
 
