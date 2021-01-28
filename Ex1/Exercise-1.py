@@ -151,29 +151,25 @@ class BayesianNetwork:
 
     def sorted_nodes(self):
         """
-        TODO: Implement Kahn's algorithm (or some equivalent algorithm) for putting
-              variables in lexicographical topological order.
         Returns: List of sorted variable names.
         """
         L = list()
         S = list()
         recordedParents = set()
         for var in self.variables.values():
-            if np.prod(var.no_parent_states) == 1:
+            if np.prod(var.no_parent_states) == 1: # Add parentless nodes to S
                 S.append(var.name)
                 recordedParents.add(var.name)
         
-        while S: #Set is not empty
-            S.sort() #To ensure lexical ordering
+        while S: # Set is not empty
+            S.sort() # To ensure lexical ordering
             curNode = S.pop(0)
             L.append(curNode)
             for child in self.edges[self.variables[curNode]]:  
                 parents = set(child.parents)  
-                if parents.issubset(recordedParents):
+                if parents.issubset(recordedParents) and child.name not in S:
                     S.append(child.name)
                     recordedParents.add(child.name)
-        print("L:")
-        print(L)
         return L
 
 
@@ -189,24 +185,17 @@ class InferenceByEnumeration:
         self.topo_order = bn.sorted_nodes()
 
     def _enumeration_ask(self, X, evidence):
-        # TODO: Implement Enumeration-Ask algortihm as described in Problem 4 b)
+        """
+        Takes a variable X and returns the conditional distribution given evidence,
+        which is a dictionary.
+        """
 
-        # Reminder:
-        # When mutable types (lists, dictionaries, etc.) are passed to functions in python
-        # it is actually passing a pointer to that variable. This means that if you want
-        # to make sure that a function doesn't change the variable, you should pass a copy.
-        # You can make a copy of a variable by calling variable.copy()
-
-    
         n = self.bn.variables[X].no_states
-        Q = np.zeros(n)
+        Q = np.zeros(n) # Initializing the distribution
         vars = self.topo_order
         for i in range(n):
             evidence[X] = i
             Q[i] = self._enumerate_all(vars.copy(),evidence.copy())
-        
-        print("Q:")
-        print(Q)
         return Q/np.sum(Q) # Normalized 
 
             
@@ -219,7 +208,7 @@ class InferenceByEnumeration:
         Y = vars.pop(0)
         Yparents = self.bn.variables[Y].parents
         Ycondition = {key : value for key, value in evidence.items() \
-                    if key in Yparents}
+                    if key in Yparents} # Finds the parent values for Y
 
         if Y in evidence.keys():
             return self.bn.variables[Y].probability(evidence[Y],Ycondition) \
@@ -290,16 +279,15 @@ def problem3c():
 def monty_hall():
     # TODO: Implement the monty hall problem as described in Problem 4c)
      
-     v1 = Variable('P', 3, [[1/3],[1/3],[1/3]]) # Prize
-     v2 = Variable('CBG', 3, [[1/3],[1/3],[1/3]]) # ChosenByGuest
-     v3 = Variable('OBH', 3, [[0, 0, 0, 0, 1/2, 1, 0, 1, 1/2],
+     v1 = Variable('A', 3, [[1/3],[1/3],[1/3]]) # Prize
+     v2 = Variable('B', 3, [[1/3],[1/3],[1/3]]) # ChosenByGuest
+     v3 = Variable('C', 3, [[0, 0, 0, 0, 1/2, 1, 0, 1, 1/2], # OpenedByHost
                               [1/2, 0, 1, 0, 0, 0, 1, 0, 1/2],
                               [1/2, 1, 0, 1, 1/2, 0, 0, 0, 0]],
-                              parents = ['CBG', 'P'],
+                              parents = ['A', 'B'],
                               no_parent_states = [3, 3])
     
      bn = BayesianNetwork()
-
      bn.add_variable(v1)
      bn.add_variable(v2)
      bn.add_variable(v3)
@@ -307,16 +295,14 @@ def monty_hall():
      bn.add_edge(v2, v3)
 
      inference = InferenceByEnumeration(bn)
-     posterior = inference.query('P', {'CBG' : 0, 'OBH' : 2})
-     print(f"Probability distribution, P({v1.name} | {v2.name} = 0, {v3.name} = 2)")
+     posterior = inference.query('A', {'B' : 0, 'C' : 2})
+     print(f"Probability distribution, P(P | CBG = 0, OBH = 2)")
      print(posterior)
 
 
 
 
-
-if __name__ == '__main__':
-    problem3c()
-    # monty_hall()
-
+problem3c()
 monty_hall()
+
+
