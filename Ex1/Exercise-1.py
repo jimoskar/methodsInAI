@@ -175,10 +175,6 @@ class BayesianNetwork:
 
 
 
-
-
-
-
 class InferenceByEnumeration:
     def __init__(self, bn):
         self.bn = bn
@@ -277,7 +273,6 @@ def problem3c():
 
 
 def monty_hall():
-    # TODO: Implement the monty hall problem as described in Problem 4c)
      
      v1 = Variable('A', 3, [[1/3],[1/3],[1/3]]) # Prize
      v2 = Variable('B', 3, [[1/3],[1/3],[1/3]]) # ChosenByGuest
