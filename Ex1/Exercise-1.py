@@ -172,6 +172,29 @@ class BayesianNetwork:
                     recordedParents.add(child.name)
         return L
 
+    def sorted_nodes2(self):
+        """
+        Returns: List of sorted variable names.
+        """
+        L = list()
+        S = list()
+        edges = dict(self.edges)
+        recordedParents = set()
+
+        for var in self.variables.values():
+            if np.prod(var.no_parent_states) == 1: # Add parentless nodes to S
+                S.append(var.name)
+                recordedParents.add(var.name)
+        while S:
+            S.sort() # To ensure lexical ordering
+            curNode = S.pop(0)
+            L.append(curNode)
+            for child in edges[self.variables[curNode]]: 
+                if set(child.parents).issubset(recordedParents):
+                    S.append(child.name)
+            
+        return L
+
 
 
 
