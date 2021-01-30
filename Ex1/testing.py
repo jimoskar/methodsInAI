@@ -22,4 +22,7 @@ import numpy as np
 
 a = np.zeros(2)
 
-print(np.prod(a[:0]))
+s = {1,2,3}
+
+print(1 in s)
+

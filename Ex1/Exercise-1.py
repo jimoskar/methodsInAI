@@ -156,16 +156,16 @@ class BayesianNetwork:
         L = list()
         S = list()
         recordedParents = set()
-        for var in self.variables.values():
+        for var in self.variables.values(): # Find parentless nodes
             if np.prod(var.no_parent_states) == 1: # Add parentless nodes to S
                 S.append(var.name)
                 recordedParents.add(var.name)
         
-        while S: # Set is not empty
+        while S: # S is not empty
             S.sort() # To ensure lexical ordering
             curNode = S.pop(0)
             L.append(curNode)
-            for child in self.edges[self.variables[curNode]]:  
+            for child in self.edges[self.variables[curNode]]: 
                 parents = set(child.parents)  
                 if parents.issubset(recordedParents) and child.name not in S:
                     S.append(child.name)
@@ -195,7 +195,6 @@ class InferenceByEnumeration:
         return Q/np.sum(Q) # Normalized 
 
             
-
 
     def _enumerate_all(self, vars, evidence):
         if not vars:
