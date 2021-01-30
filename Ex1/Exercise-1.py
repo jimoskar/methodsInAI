@@ -294,8 +294,6 @@ def monty_hall():
      print(posterior)
 
 
-
-
 problem3c()
 monty_hall()
 
