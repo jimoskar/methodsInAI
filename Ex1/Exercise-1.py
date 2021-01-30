@@ -149,7 +149,7 @@ class BayesianNetwork:
             raise ValueError("Child variable is not added to list of variables.")
         self.edges[from_variable].append(to_variable)
 
-    def sorted_nodes(self):
+    def sorted_nodes2(self):
         """
         Returns: List of sorted variable names.
         """
@@ -172,27 +172,40 @@ class BayesianNetwork:
                     recordedParents.add(child.name)
         return L
 
-    def sorted_nodes2(self):
+    def sorted_nodes(self):
         """
         Returns: List of sorted variable names.
         """
         L = list()
         S = list()
-        edges = dict(self.edges)
-        recordedParents = set()
+        sEdges = dict() # string edges
+        for key, value in self.edges.items():
+            if key.name not in sEdges.keys():
+                sEdges[key.name] = []
+            for child in value:
+                sEdges[key.name].append(child.name)
 
         for var in self.variables.values():
             if np.prod(var.no_parent_states) == 1: # Add parentless nodes to S
                 S.append(var.name)
-                recordedParents.add(var.name)
+        print(S)
+        print(sEdges)
         while S:
             S.sort() # To ensure lexical ordering
             curNode = S.pop(0)
             L.append(curNode)
-            for child in edges[self.variables[curNode]]: 
-                if set(child.parents).issubset(recordedParents):
-                    S.append(child.name)
-            
+            for child in sEdges[curNode]: 
+                sEdges[curNode].remove(child)
+                edgeToChild = False
+                for value in sEdges.values():
+                    if child in value:
+                        edgeToChild = True
+
+                if not edgeToChild:
+                    if child not in sEdges.keys():
+                        L.append(child)
+                    else:
+                        S.append(child)
         return L
 
 
