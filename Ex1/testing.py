@@ -1,28 +1,12 @@
-dict = {"a":1, "b":2}
-
-for e in dict.items() :
-    print(e)
-
-
-a_subset = {key: value for key, value in dict.items() if value >= 2}
-print(a_subset)
-
-s = {1,2,3}
-
-l = {1,2}
-
-if l.issubset(s):
-    print("true")
-    print(l.union(s))
-    
-l = [1,2,3]
-print(l[:1])
-
 import numpy as np
+import matplotlib.pyplot as plt
 
-a = np.zeros(2)
+x = np.linspace(0,100)
 
-s = {1,2,3}
+def f(x):
+    return np.cos(x)
 
-print(1 in s)
+print(x)
+plt.plot(x,f(x))
+plt.show()
 
