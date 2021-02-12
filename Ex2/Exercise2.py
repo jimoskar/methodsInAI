@@ -4,21 +4,13 @@
 #===========================#
 
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 # b)
 def normalize(a):
     return a / np.sum(a)
 
-
-def forward_recursive(Tmatrix,Omatrices,evidence):
-    if not evidence:
-        return np.array([0.5, 0.5])
-
-    e = evidence.pop(-1)
-    if e:
-        return Omatrices[0] @ Tmatrix.T @ forward(Tmatrix, Omatrices, evidence.copy())
-    else:
-        return Omatrices[1] @ Tmatrix.T @ forward(Tmatrix, Omatrices, evidence.copy())
 
 
 def forward(Tmatrix, Omatrices, evidence):
@@ -36,12 +28,16 @@ def forward(Tmatrix, Omatrices, evidence):
 
             
 
-Omatrices = [np.array([[0.25, 0], [0, 0.8]]), np.array([[0.75, 0], [0, 0.2]])] # First: Birds_t = true,  Second: Birds_t = false
+Omatrices = [np.array([[0.8, 0], [0, 0.25]]), np.array([[0.2, 0], [0, 0.75]])] # First: no birds,  Second: birds nearby
 Tmatrix = np.array([[0.7, 0.3],[0.2, 0.8]]) # first row corresponds to Xt = false and second row corresponds to Xt = true
 evidence = [1, 1, 0, 1, 0, 1]
 
-print(normalize(forward(Tmatrix, Omatrices, evidence.copy())))
-print(forward(Tmatrix,Omatrices, evidence))
+filter = forward(Tmatrix,Omatrices, evidence)
+print(filter)
+x = [i for i in range(len(filter))]
+p = [f[1] for f in filter]
+plt.plot(x,p)
+plt.show()
 
 # c)
 
@@ -91,51 +87,31 @@ print(smooth(Tmatrix, Omatrices, evidence))
 
 # e)
 
-"""
 
 start_p = np.array([0.5, 0.5]) # Initial distribution over states
 states = [0, 1] # 0 = 'no fish', 1 = 'fish'
 
+
 def viterbi(Tmatrix, Omatrices, evidence, start_p, states):
-    V = [{}]
-    for st in states:
-        V[0][st] = {"prob": start_p[st] * Omatrices[evidence[0]][st, st], "prev": None}
-    for t in range(1, len(evidence)):
-        V.append({})
-        for st in states:
-            max_tr_prob = V[t - 1][states[0]]["prob"] * Tmatrix[states[0],st]
-            prev_st_selected = states[0]
-            for prev_st in states[1:]:
-                tr_prob = V[t - 1][prev_st]["prob"] * Tmatrix[prev_st,st]
-                if tr_prob > max_tr_prob:
-                    max_tr_prob = tr_prob
-                    prev_st_selected = prev_st
+    V = np.zeros((len(states), len(evidence)))
+    for s in range(len(states)):
+        V[s,0] = start_p[s] * Omatrices[evidence[0]][s,s]
 
-            max_prob = max_tr_prob * Omatrices[evidence[t]][st,st]
-            V[t][st] = {"prob": max_prob, "prev": prev_st_selected}
-
-    for line in dptable(V):
-        print(line)
-
-    opt = []
-    max_prob = 0.0
-    best_st = None
-    # Get most probable state and its backtrack
-    for st, data in V[-1].items():
-        if data["prob"] > max_prob:
-            max_prob = data["prob"]
-            best_st = st
-    opt.append(best_st)
-    previous = best_st
+    for o in range(1, len(evidence)):
+        for s in range(len(states)):
+            k = np.argmax([V[k, o - 1] * Tmatrix[k, s] * Omatrices[evidence[o]][s, s] for k in range(len(states))])
+            V[s, o] = V[k, o  - 1] * Tmatrix[k, s] * Omatrices[evidence[o]][s, s]
     
-    # Follow the backtrack till the first observation
-    for t in range(len(V) - 2, -1, -1):
-        opt.insert(0, V[t + 1][previous]["prev"])
-        previous = V[t + 1][previous]["prev"]
+    best_path  = []
+    print(V)
+    for o in range(-1, -(len(evidence) + 1), -1):
+        k = np.argmax(V[:, o])
+        best_path.insert(0, states[k])
+    return best_path
 
-    print ("The steps of states are " + " ".join(opt) + " with highest probability of %s" % max_prob)
+print("Viterbi: ")
+print(viterbi(Tmatrix, Omatrices, evidence, start_p, states))
 
-"""
 
 
 def dptable(V):
@@ -143,8 +119,6 @@ def dptable(V):
     yield " ".join(("%12d" % i) for i in range(len(V)))
     for state in V[0]:
         yield "%.7s: " % state + " ".join("%.7s" % ("%f" % v[state]["prob"]) for v in V)
-
-#viterbi(Tmatrix, Omatrices, evidence, start_p, states)
 
 
 obs = ("birds", "birds", "noBirds", "birds", "birds", "noBirds")
