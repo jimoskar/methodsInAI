@@ -5,6 +5,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+plt.style.use('seaborn')
 
 
 # b)
@@ -33,11 +34,15 @@ Tmatrix = np.array([[0.7, 0.3],[0.2, 0.8]]) # first row corresponds to Xt = fals
 evidence = [1, 1, 0, 1, 0, 1]
 
 filter = forward(Tmatrix,Omatrices, evidence)
+print("filter probs: ")
 print(filter)
 x = [i for i in range(len(filter))]
 p = [f[1] for f in filter]
-plt.plot(x,p)
-plt.show()
+
+plt.plot(x,p, label = "Filtering", linewidth = 3)
+plt.xlabel("Time, $t$")
+plt.ylabel("Probability")
+#plt.show()
 
 # c)
 
@@ -48,10 +53,16 @@ def predict(Tmatrix, initial, tLower, tUpper):
         predList.append(predList[k] @ Tmatrix)
     return predList
 
+
 initial = forward(Tmatrix,Omatrices,evidence)[-1]
-print(initial)
-print("\n")
-print(predict(Tmatrix, initial, 7, 30))
+print("predict:")
+prediction = predict(Tmatrix, initial, 7, 30)
+print(prediction)
+
+y = [p[1] for p in prediction]
+x = [i for i in range(7,31)]
+plt.plot(x,y, label = "Prediction", linewidth = 3)
+
 # This operation is called prediction, beacuse it predicts the distribution og X's states for future time points t > k,
 # for evidence given up until t = k.
 # As t increases, we can see that the the distribution over X apporaches a stationary distribution.
@@ -81,7 +92,16 @@ def smooth(Tmatrix, Omatrices, evidence):
 
     return sv
 
-print(smooth(Tmatrix, Omatrices, evidence))
+smoothing = smooth(Tmatrix, Omatrices, evidence)
+print("smooth: ")
+print(smoothing)
+
+x = [i for i in range(0, 6)]
+y = [s[1] for s in smoothing]
+plt.plot(x, y, label = "Smoothing", linestyle = "dashed", linewidth = 3)
+plt.legend()
+plt.show()
+
 
 # This is called smoothing
 
