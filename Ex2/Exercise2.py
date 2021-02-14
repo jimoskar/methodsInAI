@@ -34,7 +34,7 @@ Tmatrix = np.array([[0.7, 0.3],[0.2, 0.8]]) # first row corresponds to Xt = fals
 evidence = [1, 1, 0, 1, 0, 1]
 
 filter = forward(Tmatrix,Omatrices, evidence)
-print("filter probs: ")
+print("\nFiltering: ")
 print(filter)
 x = [i for i in range(len(filter))]
 p = [f[1] for f in filter]
@@ -42,7 +42,6 @@ p = [f[1] for f in filter]
 plt.plot(x,p, label = "Filtering", linewidth = 3)
 plt.xlabel("Time, $t$")
 plt.ylabel("Probability")
-#plt.show()
 
 # c)
 
@@ -55,8 +54,8 @@ def predict(Tmatrix, initial, tLower, tUpper):
 
 
 initial = forward(Tmatrix,Omatrices,evidence)[-1]
-print("predict:")
 prediction = predict(Tmatrix, initial, 7, 30)
+print("\n Prediction:")
 print(prediction)
 
 y = [p[1] for p in prediction]
@@ -93,7 +92,7 @@ def smooth(Tmatrix, Omatrices, evidence):
     return sv
 
 smoothing = smooth(Tmatrix, Omatrices, evidence)
-print("smooth: ")
+print("\nSmoothing: ")
 print(smoothing)
 
 x = [i for i in range(0, 6)]
