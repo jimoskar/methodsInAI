@@ -7,13 +7,12 @@ from sklearn.tree import DecisionTreeClassifier
 
 
 df = pd.read_csv("test.csv")
-#print(df.head())
-#print(df['Pclass'])
 
-#df['Sex'] = df['Sex'].astype("category")
 xCat = df.loc[:, ['Pclass', 'Sex', 'Parch', 'Embarked']]
-xCat["Sex"] = xCat["Sex"].astype("category")
+xCat[:] = xCat[:].astype("category")
 y = df.loc[:, 'Survived']
+
+
 print(xCat["Sex"].dtype)
 print(xCat.to_numpy)
 #print(xCat.head())
@@ -28,6 +27,10 @@ class DecisionTree:
     def addBranch(self, value, b):
         self.branches[value] = b
 
+    def predict(self, observation):
+        if not self.dict: return self.label
+        return self.branches[observation[self.A]].predict(observation)
+
 
 def plurVal(data):
     return data.value_counts().idxmax()
@@ -37,20 +40,21 @@ def allEqual(s):
     return (a[0] == a).all()
 
 def importance(a, e):
+    pass
 
 
 def DecisionTreeLearning(examples, attributes, response, parent_examples):
     '''Returns a decision tree based on examples'''
-    if not examples: return plurVal(parent_examples)
+    if not examples: return plurVal(parent_examples[response])
     elif allEqual(examples[response]): examples[response][0]
-    elif not attributes: return plurVal(examples)
+    elif not attributes: return plurVal(examples[response])
     else:
         A = np.argmax(importance(attributes, examples))
-        tree = DecisionTree()
-        tree.add(A)
-        for v in A.values:
-            exs = ... #e where e.A = v
-            subtree = DecisionTreeLearning(exs,attributes - A, examples)
+        attributes.remove(A)
+        tree = DecisionTree(A)
+        for v in examples[A].cat.categories:
+            exs = examples.loc[examples[A] == v] #e where e.A = v
+            subtree = DecisionTreeLearning(exs,attributes, examples)
             tree.addBranch(v, subtree)
         return tree
 
