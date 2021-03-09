@@ -3,11 +3,12 @@
 import pandas as pd
 import numpy as np
 from graphviz import Digraph
+from pandas.core.series import Series
 from sklearn.tree import DecisionTreeClassifier
 import math
 
 
-df = pd.read_csv("test.csv")
+df = pd.read_csv("train.csv")
 
 xCat = df.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']]
 xCat[:] = xCat[:].astype("category")
@@ -27,49 +28,53 @@ class DecisionTree:
         self.branches[value] = b
 
     def predict(self, observation):
-        if not self.dict: return self.label
-        return self.branches[observation[self.A]].predict(observation)
+        index = observation[self.label][0]
+        print(index)
+        if not isinstance(self.branches[index], DecisionTree):
+            return self.branches[index]
+        else:
+            return self.branches[index].predict(observation)
 
     def printTree(self):
-        print(self.branches)
-    
-    def addToPlot(self, parent, edge, graph):
-        graph.node(self.label)
-        graph.edge(parent, self.label, label = str(edge))
+        print(str(self.label) + ": [")
         for key, value in self.branches.items():
             if not isinstance(value, DecisionTree):
-                graph.node(str(key), str(value))
-                graph.edge(self.label, str(key), label = str(key))
+                print(value)
             else:
-                value.addToPlot(self.label, key, graph)
+                value.printTree()
+        print("]")
+    
+    def addToPlot(self, parent, edge, graph, id):
+        parentId = id
+        graph.node(str(id), self.label)
+        graph.edge(str(parent), str(id), label = str(edge))
+        id += 1
+        for key, value in self.branches.items():
+            if not isinstance(value, DecisionTree):
+                graph.node(str(id), str(value))
+                graph.edge(str(parentId), str(id), label = str(key))
+                id += 1
+            else:
+                value.addToPlot(parentId, key, graph, id)
 
-        '''
-dot = Digraph(comment='The Round Table')
-
-dot.node('A', 'A')
-dot.node('B', 'Sir Bedevere the Wise')
-dot.node('L', 'Sir Lancelot the Brave')
-
-dot.edges(['AB', 'AL'])
-dot.edge('B', 'L', constraint='false')
-
-#dot.render('test-output/round-table.gv', view=True)
-'''
         
     def plotTree(self):
+        id = 0
+        parentId = id
         graph = Digraph(comment='Decision Tree')
-        graph.node(self.label, self.label)
+        graph.node(str(id), self.label)
+        id += 1
         for key, value in self.branches.items():
             if not isinstance(value, DecisionTree):
-                graph.node(str(key), str(value))
-                graph.edge(self.label, str(key), label = str(key))
+                graph.node(str(id), str(value))
+                graph.edge(str(parentId), str(id), label = str(key))
+                id += 1
             else:
-                value.addToPlot(self.label, key, graph)
+                value.addToPlot(parentId, key, graph, id)
 
         graph.render('test-output/round-table.gv', view=True)
             
         
-
 
 
 def plurVal(data):
@@ -115,7 +120,8 @@ def importance(atr, exs, res):
 
 def DecisionTreeLearning(examples, attributes, response, parent_examples = None):
     '''Returns a decision tree based on examples'''
-    if examples.empty: return plurVal(parent_examples[response])
+    if examples.empty: 
+        return plurVal(parent_examples[response])
     elif allEqual(examples[response]): 
         print("heyo") 
         print(examples[response].iloc[0])
@@ -128,7 +134,8 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
         tree = DecisionTree(A)
         for v in examples[A].cat.categories:
             exs = examples.loc[examples[A] == v] 
-            subtree = DecisionTreeLearning(exs, attributes, response, examples)
+            attr = attributes.copy()
+            subtree = DecisionTreeLearning(exs, attr, response, examples)
             tree.addBranch(v, subtree)
         return tree
 
@@ -136,8 +143,28 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
 attributes = ['Pclass', 'Sex', 'Embarked']
 tree = DecisionTreeLearning(xCat, attributes, 'Survived')
 tree.printTree()
-tree.plotTree()
+#tree.plotTree()
 
+obs = pd.DataFrame({'Pclass':[1], 'Sex':['male'], 'Embarked': ['C']})
+print("prediction:")
+print(tree.predict(obs))
+
+# Testing
+
+test = pd.read_csv('test.csv')
+print(test.head())
+obs = test.loc[:, ['Pclass', 'Sex', 'Embarked']]
+resp = test.loc[:, 'Survived']
+n = resp.shape[0]
+t = 0
+f = 0
+for i in range(n):
+    pred = tree.predict(obs.iloc[i])
+    if pred == resp.iloc[i][0]:
+        t += 1
+    else:
+        f += 1
+print(t/(t+f))
 
 
 

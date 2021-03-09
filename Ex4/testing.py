@@ -25,5 +25,6 @@ for e in l:
     pass
 
 vals = ds['A'].value_counts()
-print(ds['A'][1])
+print(ds.iloc[0])
+
 
