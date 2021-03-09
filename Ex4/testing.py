@@ -9,7 +9,7 @@ def allEqual(s):
 def plurVal(data):
     return data.value_counts().idxmax()    
 
-ds = pd.DataFrame({'A':[1,1,3], 'B':[1,1,1]})
+ds = pd.DataFrame({'A':[3,1,3], 'B':[1,1,1]})
 
 df = pd.read_csv("test.csv")
 #print(df.head())
@@ -21,8 +21,9 @@ xCat = df.loc[:, ['Pclass', 'Sex', 'Parch', 'Embarked']]
 xCat[:] = xCat[:].astype("category")
 l = xCat["Pclass"].cat.categories
 for e in l:
-    print(e)
+    #print(e)
+    pass
 
-
-print(ds.loc[ds['A'] == 1])
+vals = ds['A'].value_counts()
+print(ds['A'][1])
 

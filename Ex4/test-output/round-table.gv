@@ -1,9 +1,20 @@
-// The Round Table
+// Decision Tree
 digraph {
-	A [label=A]
-	B [label="Sir Bedevere the Wise"]
-	L [label="Sir Lancelot the Brave"]
-	A -> B
-	A -> L
-	B -> L [constraint=false]
+	Sex [label=Sex]
+	Pclass
+	Sex -> Pclass [label=female]
+	Embarked
+	Pclass -> Embarked [label=1]
+	C [label=1]
+	Embarked -> C [label=C]
+	Q [label=1]
+	Embarked -> Q [label=Q]
+	S [label=1]
+	Embarked -> S [label=S]
+	2 [label=1]
+	Pclass -> 2 [label=2]
+	3 [label=1]
+	Pclass -> 3 [label=3]
+	male [label=0]
+	Sex -> male [label=male]
 }
