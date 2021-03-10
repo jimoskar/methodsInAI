@@ -98,12 +98,20 @@ def importance(atr, exs, res):
     bestAtr = None
     for a in atr:
         remainder = 0
-        counts = df.groupby(res)[a].value_counts().unstack(fill_value=0).stack()
+        print("E")
+        print(exs)
+        counts = exs.groupby(res)[a].value_counts().unstack(fill_value=0).stack()
 
         for v in exs[a].cat.categories:
-            pk = counts[1, v]
-            nk = counts[0, v]
-            remainder += (pk + nk)/(p + n) * B(pk/(pk + nk))
+            #print("COUNTS")
+            #print(counts)
+            #print(v in counts.index.levels[1])
+            if v not in counts.index.levels[1]:
+                remainder += 0
+            else:
+                pk = counts[1, v]
+                nk = counts[0, v]
+                remainder += (pk + nk)/(p + n) * B(pk/(pk + nk))
 
         gain = ent - remainder
         if gain > bestGain:
@@ -120,8 +128,6 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
     if examples.empty: 
         return plurVal(parent_examples[response])
     elif allEqual(examples[response]): 
-        print("heyo") 
-        print(examples[response].iloc[0])
         return examples[response].iloc[0]
     elif not attributes: 
         return plurVal(examples[response])
@@ -139,11 +145,8 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
 
 attributes = ['Pclass', 'Sex', 'Embarked']
 tree = DecisionTreeLearning(xCat, attributes, 'Survived')
-tree.printTree()
+#tree.printTree()
 tree.plotTree()
-
-#print("prediction:")
-#print(tree.predict(obs))
 
 # Testing
 
@@ -167,8 +170,24 @@ def error(tree, test):
 print(error(tree, test))
 
 
+'''
+
+restaurant = pd.DataFrame({'Alt' : [1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1], 
+                            'Bar' : [0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1],
+                            'Fri' : [0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1],
+                            'Hun' : [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                            'Pat' : ['S', 'F', 'S', 'F', 'F', 'S', 'N', 'S', 'F', 'F', 'N', 'F'],
+                            'Price' : ['$$$', '$', '$', '$', '$$$', '$$', '$', '$$', '$', '$$$', '$', '$'],
+                            'Rain' : [0, 0, 0, 1 , 0, 1, 1, 1, 1, 0, 0, 0],
+                            'Res' : [1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0],
+                            'Type': ['F', 'T', 'B', 'T', 'F', 'I', 'B', 'T', 'B', 'I', 'T', 'B'],
+                            'Est' : [0, 1, 0, 1, 2, 0, 0, 0, 2, 1, 0, 2],
+                            'WillWait' : [1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1]})
 
 
-#tree = DecisionTreeClassifier(criterion="entropy")
-
-#tree.fit(xCat.to_numpy(), y)
+restaurant[:] = restaurant[:].astype("category")
+print(restaurant)
+print(restaurant.groupby('WillWait')['Alt'].value_counts().unstack(fill_value=0).stack())
+tree = DecisionTreeLearning(restaurant, ['Alt', 'Bar', 'Fri', 'Hun', 'Pat', 'Price', 'Rain', 'Res', 'Type', 'Est'], 'WillWait')
+tree.plotTree()
+'''
