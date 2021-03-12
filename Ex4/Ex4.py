@@ -8,11 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 import math
 
 
-df = pd.read_csv("train.csv")
 
-xCat = df.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']]
-xCat[:] = xCat[:].astype("category")
-y = df.loc[:, 'Survived']
 
 
 #print(xCat.head())
@@ -28,6 +24,7 @@ class DecisionTree:
         self.branches[value] = b
 
     def predict(self, observation):
+        print(observation)
         index = observation[self.label]
         if not isinstance(self.branches[index], DecisionTree):
             return self.branches[index]
@@ -87,6 +84,31 @@ def B(q):
         return 0
     return -( q * math.log(q, 2) + (1 - q) * math.log(1 - q, 2))
 
+def findBestSplit(a, res, exs, p, n):
+    exs = exs.sort_values(by = [a])
+    bestSplit = None
+    bestRemainder = float('inf')
+    for i in range(1,exs.shape[0]):
+        remainder = 0
+        if exs[res][i] != exs[res][i - 1]:
+            p1 = exs.loc[(exs[a] >= exs[a][i]) & (exs[res][i] == 1)].shape[0]
+            p2 = exs.loc[(exs[a] < exs[a][i]) & (exs[res][i] == 1)].shape[0]
+            n1 = exs.loc[(exs[a] >= exs[a][i]) & (exs[res][i] == 0)].shape[0]
+            n2 = exs.loc[(exs[a] < exs[a][i]) & (exs[res][i] == 0)].shape[0]
+            remainder = (p1 + n1)/(p + n) * B(p1/(p1 + n1)) + (p2 + n2)/(p + n) * B(p2/(p2 + n2))
+            if remainder < bestRemainder:
+                bestRemainder = remainder
+                bestSplit = exs[a][i]
+    
+    return bestRemainder, bestSplit
+
+
+
+
+
+
+
+
 
 def importance(atr, exs, res):
     vals = exs[res].value_counts()
@@ -96,29 +118,28 @@ def importance(atr, exs, res):
     
     bestGain = float('-inf')
     bestAtr = None
+    split = None
     for a in atr:
         remainder = 0
-        print("E")
-        print(exs)
-        counts = exs.groupby(res)[a].value_counts().unstack(fill_value=0).stack()
-
-        for v in exs[a].cat.categories:
-            #print("COUNTS")
-            #print(counts)
-            #print(v in counts.index.levels[1])
-            if v not in counts.index.levels[1]:
-                remainder += 0
-            else:
-                pk = counts[1, v]
-                nk = counts[0, v]
-                remainder += (pk + nk)/(p + n) * B(pk/(pk + nk))
+        print(str(exs[a].dtype))
+        if str(exs[a].dtype) != 'category':
+            remainder, split = findBestSplit(a, res, exs, n, p)
+        else:
+            counts = exs.groupby(res)[a].value_counts().unstack(fill_value=0).stack()
+            for v in exs[a].cat.categories:
+                if v not in counts.index.levels[1]:
+                    remainder += 0
+                else:
+                    pk = counts[1, v]
+                    nk = counts[0, v]
+                    remainder += (pk + nk)/(p + n) * B(pk/(pk + nk))
 
         gain = ent - remainder
         if gain > bestGain:
             bestGain = gain
             bestAtr = a
 
-    return bestAtr
+    return bestAtr, split
 
 
 
@@ -132,28 +153,50 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
     elif not attributes: 
         return plurVal(examples[response])
     else:
-        A = importance(attributes, examples, response)
+        A, split = importance(attributes, examples, response)
         attributes.remove(A)
         tree = DecisionTree(A)
-        for v in examples[A].cat.categories:
-            exs = examples.loc[examples[A] == v] 
-            attr = attributes.copy()
-            subtree = DecisionTreeLearning(exs, attr, response, examples)
-            tree.addBranch(v, subtree)
+        if split == None: # A is categorical
+            for v in examples[A].cat.categories:
+                exs = examples.loc[examples[A] == v] 
+                attr = attributes.copy()
+                subtree = DecisionTreeLearning(exs, attr, response, examples)
+                tree.addBranch(v, subtree)
+        else:
+            
+            exs1 = examples.loc[examples[A] > split] 
+            attr1 = attributes.copy()
+            subtree = DecisionTreeLearning(exs1, attr1, response, examples)
+            tree.addBranch('>=' + str(split), subtree)
+
+            exs2 = examples.loc[examples[A] < split] 
+            attr2 = attributes.copy()
+            subtree = DecisionTreeLearning(exs2, attr2, response, examples)
+            tree.addBranch('<' + str(split), subtree)
+
         return tree
 
 
-attributes = ['Pclass', 'Sex', 'Embarked']
-tree = DecisionTreeLearning(xCat, attributes, 'Survived')
+
+train = pd.read_csv("train.csv")
+
+X = train.loc[:, ['Pclass', 'Sex', 'Embarked', 'Fare', 'Survived']]
+X.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']] = X.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']].astype("category")
+
+
+
+attributes = ['Pclass', 'Sex', 'Fare', 'Embarked']
+tree = DecisionTreeLearning(X, attributes.copy(), 'Survived')
 #tree.printTree()
-tree.plotTree()
+#tree.plotTree()
 
 # Testing
 
 test = pd.read_csv('test.csv')
 
-def error(tree, test):
-    obs = test.loc[:, ['Pclass', 'Sex', 'Embarked']]
+def error(tree, test, attributes):
+    obs = test.loc[:, attributes]
+    print(obs)
     resp = test.loc[:, 'Survived']
     n = resp.shape[0]
     t = 0
@@ -167,7 +210,9 @@ def error(tree, test):
     
     return t/(t + f)
 
-print(error(tree, test))
+print("at")
+print(attributes)
+print(error(tree, test, attributes))
 
 
 '''

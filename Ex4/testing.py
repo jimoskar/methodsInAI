@@ -48,15 +48,16 @@ fit = tr.fit(X, Y)
 
 #print(tree.plot_tree(fit))
 #print("hei")
-
+'''
 import graphviz 
 dot_data = tree.export_graphviz(fit, out_file=None) 
 graph = graphviz.Source(dot_data) 
 graph.render()
 graph.view()
+'''
 
-
-
+ds['A'] = ds['A'].astype('category')
+print(ds.loc[(ds['A'] == 3) & (ds['B'] == 1)])
 
 
 
