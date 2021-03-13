@@ -16,9 +16,11 @@ import math
 # Irrelevant: Name, Cabin, Ticket
 
 class DecisionTree:
-    def __init__(self, A):
+    def __init__(self, A, type = 'disc', split = None):
         self.label = A
         self.branches = dict()
+        self.type = type
+        self.split = split
     
     def addBranch(self, value, b):
         self.branches[value] = b
@@ -26,10 +28,29 @@ class DecisionTree:
     def predict(self, observation):
         print(observation)
         index = observation[self.label]
-        if not isinstance(self.branches[index], DecisionTree):
-            return self.branches[index]
-        else:
-            return self.branches[index].predict(observation)
+        if self.type == 'disc': # attribute is categorical/discrete
+            if not isinstance(self.branches[index], DecisionTree):
+                return self.branches[index]
+            else:
+                return self.branches[index].predict(observation)
+        else: # attribute is continuous
+            if index >= self.split:
+                index = '>=' + str(self.split)
+                if not isinstance(self.branches[index], DecisionTree):
+                    return self.branches[index]
+                else:
+                    return self.branches[index].predict(observation)
+            else:
+                index = '<' + str(self.split)
+                if not isinstance(self.branches[index], DecisionTree):
+                    return self.branches[index]
+                else:
+                    return self.branches[index].predict(observation)
+
+
+
+
+
 
     def printTree(self):
         print(str(self.label) + ": [")
@@ -155,15 +176,16 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
     else:
         A, split = importance(attributes, examples, response)
         attributes.remove(A)
-        tree = DecisionTree(A)
+        tree = None
         if split == None: # A is categorical
+            tree = DecisionTree(A)
             for v in examples[A].cat.categories:
                 exs = examples.loc[examples[A] == v] 
                 attr = attributes.copy()
                 subtree = DecisionTreeLearning(exs, attr, response, examples)
                 tree.addBranch(v, subtree)
         else:
-            
+            tree = DecisionTree(A, 'cont', split)
             exs1 = examples.loc[examples[A] > split] 
             attr1 = attributes.copy()
             subtree = DecisionTreeLearning(exs1, attr1, response, examples)
