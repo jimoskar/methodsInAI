@@ -26,7 +26,6 @@ class DecisionTree:
         self.branches[value] = b
 
     def predict(self, observation):
-        print(observation)
         index = observation[self.label]
         if self.type == 'disc': # attribute is categorical/discrete
             if not isinstance(self.branches[index], DecisionTree):
@@ -74,7 +73,7 @@ class DecisionTree:
                 value.addToPlot(parentId, key, graph, ids)
 
         
-    def plotTree(self):
+    def plotTree(self, name):
         ids = [i for i in range(100)]
         parentId = ids.pop()
         graph = Digraph(comment='Decision Tree')
@@ -87,7 +86,7 @@ class DecisionTree:
             else:
                 value.addToPlot(parentId, key, graph, ids)
 
-        graph.render('test-output/round-table.gv', view=True)
+        graph.render(name + '.gv', view=True)
             
         
 
@@ -107,9 +106,12 @@ def B(q):
 
 def findBestSplit(a, res, exs, p, n):
     exs = exs.sort_values(by = [a])
+
+    '''
     if a == 'SibSp':
             print("examples")
             print(exs)
+    '''
     bestSplit = None
     bestRemainder = float('inf')
     for i in range(1,exs.shape[0]):
@@ -121,7 +123,7 @@ def findBestSplit(a, res, exs, p, n):
             p2 = exs.loc[(exs[a] > split) & (exs[res] == 1)].shape[0]
             n1 = exs.loc[(exs[a] < split) & (exs[res] == 0)].shape[0]
             n2 = exs.loc[(exs[a] > split) & (exs[res] == 0)].shape[0]
-            
+            '''
             if a == 'SibSp':
                 print("split")
                 print(split)
@@ -129,7 +131,7 @@ def findBestSplit(a, res, exs, p, n):
                 print(p2)
                 print(n1)
                 print(n2)
-                
+             '''   
             if (p1 == 0 and n1 == 0)or (p2 == 0 and n2 == 0):
                 continue
          
@@ -154,8 +156,6 @@ def importance(atr, exs, res):
     p = vals[1]
     n = vals[0]
     ent = B(p/(p + n))
-    print("atr")
-    print(atr)
     
     bestGain = float('-inf')
     bestAtr = None
@@ -188,7 +188,6 @@ def importance(atr, exs, res):
 
 def DecisionTreeLearning(examples, attributes, response, parent_examples = None):
     '''Returns a decision tree based on examples'''
-    print(attributes)
     if examples.empty: 
         return plurVal(parent_examples[response])
     elif allEqual(examples[response]): 
@@ -202,9 +201,7 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
             return plurVal(examples[response])
 
     
-        print("bestAttribute:")
-        print(A)
-        print(split)
+    
         attributes.remove(A)
         tree = None
         if str(examples[A].dtype) == 'category': # A is categorical
@@ -231,29 +228,9 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
 
         return tree
 
-
-
-train = pd.read_csv("train.csv")
-
-print(train['Fare'].isnull().values.any())
-
-X = train.loc[:, ['Pclass', 'Sex', 'Embarked', 'Fare', 'SibSp', 'Survived']]
-X.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']] = X.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']].astype("category")
-
-
-
-attributes = ['Pclass', 'Sex', 'Fare', 'Embarked', 'SibSp']
-tree = DecisionTreeLearning(X, attributes.copy(), 'Survived')
-#tree.printTree()
-tree.plotTree()
-
-# Testing
-
-test = pd.read_csv('test.csv')
-
 def error(tree, test, attributes):
+    '''Returns the test error.'''
     obs = test.loc[:, attributes]
-    print(obs)
     resp = test.loc[:, 'Survived']
     n = resp.shape[0]
     t = 0
@@ -269,27 +246,67 @@ def error(tree, test, attributes):
 
 
 
-print(error(tree, test, attributes))
+train = pd.read_csv("train.csv")
+test = pd.read_csv('test.csv')
+
+def one_a():
+    '''Assembles and plots the decision tree for 1a) and prints the test error.'''
+
+    trainExamples = train.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']]
+    # Make the right attributes categorical:
+    trainExamples.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']] = trainExamples.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']].astype("category")
+    attributes = ['Pclass', 'Sex', 'Embarked']
+    
+    tree = DecisionTreeLearning(trainExamples, attributes.copy(), 'Survived')
+    tree.plotTree('one_a')
+
+    print("Test error rate: ")
+    print(error(tree, test, attributes))
 
 
-'''
+def one_b():
+    '''Assembles and plots the decision tree for 1b) and prints the test error.'''
 
-restaurant = pd.DataFrame({'Alt' : [1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1], 
-                            'Bar' : [0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1],
-                            'Fri' : [0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1],
-                            'Hun' : [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-                            'Pat' : ['S', 'F', 'S', 'F', 'F', 'S', 'N', 'S', 'F', 'F', 'N', 'F'],
-                            'Price' : ['$$$', '$', '$', '$', '$$$', '$$', '$', '$$', '$', '$$$', '$', '$'],
-                            'Rain' : [0, 0, 0, 1 , 0, 1, 1, 1, 1, 0, 0, 0],
-                            'Res' : [1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0],
-                            'Type': ['F', 'T', 'B', 'T', 'F', 'I', 'B', 'T', 'B', 'I', 'T', 'B'],
-                            'Est' : [0, 1, 0, 1, 2, 0, 0, 0, 2, 1, 0, 2],
-                            'WillWait' : [1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1]})
+    trainExamples = train.loc[:, ['Pclass', 'Sex', 'Embarked', 'Fare', 'SibSp', 'Parch', 'Survived']]
+    # Make the right attributes categorical:
+    trainExamples.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']] = trainExamples.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']].astype("category")
+    attributes = ['Pclass', 'Sex', 'Fare', 'Embarked', 'SibSp', 'Parch']
+    
+    tree = DecisionTreeLearning(trainExamples, attributes.copy(), 'Survived')
+    tree.plotTree('one_b')
+
+    print("Test error rate:")
+    print(error(tree, test, attributes))
 
 
-restaurant[:] = restaurant[:].astype("category")
-print(restaurant)
-print(restaurant.groupby('WillWait')['Alt'].value_counts().unstack(fill_value=0).stack())
-tree = DecisionTreeLearning(restaurant, ['Alt', 'Bar', 'Fri', 'Hun', 'Pat', 'Price', 'Rain', 'Res', 'Type', 'Est'], 'WillWait')
-tree.plotTree()
-'''
+def restaurantExample():
+    '''Tests the model on the restaurant example from the book'''
+
+    restaurant = pd.DataFrame({'Alt' : [1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1], 
+                                'Bar' : [0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1],
+                                'Fri' : [0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1],
+                                'Hun' : [1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                                'Pat' : ['S', 'F', 'S', 'F', 'F', 'S', 'N', 'S', 'F', 'F', 'N', 'F'],
+                                'Price' : ['$$$', '$', '$', '$', '$$$', '$$', '$', '$$', '$', '$$$', '$', '$'],
+                                'Rain' : [0, 0, 0, 1 , 0, 1, 1, 1, 1, 0, 0, 0],
+                                'Res' : [1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0],
+                                'Type': ['F', 'T', 'B', 'T', 'F', 'I', 'B', 'T', 'B', 'I', 'T', 'B'],
+                                'Est' : [0, 1, 0, 1, 2, 0, 0, 0, 2, 1, 0, 2],
+                                'WillWait' : [1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1]})
+
+
+    restaurant[:] = restaurant[:].astype("category")
+    tree = DecisionTreeLearning(restaurant, ['Alt', 'Bar', 'Fri', 'Hun', 'Pat', 'Price', 'Rain', 'Res', 'Type', 'Est'], 'WillWait')
+    tree.plotTree('restaurant')
+
+
+#===========================#
+# Test the code under here! #
+#===========================#
+
+#one_a()
+#restaurantExample()
+one_b()
+
+
+
