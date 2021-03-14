@@ -109,28 +109,42 @@ def findBestSplit(a, res, exs, p, n):
     exs = exs.sort_values(by = [a])
     bestSplit = None
     bestRemainder = float('inf')
+    if a == "Fare":
+        #print(exs)
+        pass
     for i in range(1,exs.shape[0]):
         remainder = 0
         split = exs[a].iloc[i]
         if exs[res].iloc[i] != exs[res].iloc[i - 1]:
-            p1 = exs.loc[(exs[a] >= split) & (exs[res] == 1)].shape[0]
-            p2 = exs.loc[(exs[a] < split) & (exs[res] == 1)].shape[0]
-            n1 = exs.loc[(exs[a] >= split) & (exs[res] == 0)].shape[0]
-            n2 = exs.loc[(exs[a] < split) & (exs[res] == 0)].shape[0]
-            if p1 == 0 and n1 == 0 or p2 == 0 and n2 == 0:
-                print("cont")
+            p1 = exs.loc[(exs[a] <= split) & (exs[res] == 1)].shape[0]
+            p2 = exs.loc[(exs[a] > split) & (exs[res] == 1)].shape[0]
+            n1 = exs.loc[(exs[a] <= split) & (exs[res] == 0)].shape[0]
+            n2 = exs.loc[(exs[a] > split) & (exs[res] == 0)].shape[0]
+            '''
+            if a == 'Fare':
+                print("split")
+                print(split)
+                print(p1)
+                print(p2)
+                print(n1)
+                print(n2)
+                '''
+            if (p1 == 0 and n1 == 0)or (p2 == 0 and n2 == 0):
                 continue
-            #print("split")
-            #print(split)
-            #print(exs)
-            #print(p1)
-            #print(p2)
-            #print(n1)
-           # print(n2)
+            '''
+            if a == 'SibSp':
+                print("split")
+                print(split)
+                print(exs)
+                print(p1)
+                print(p2)
+                print(n1)
+                print(n2)
+            '''
             remainder = (p1 + n1)/(p + n) * B(p1/(p1 + n1)) + (p2 + n2)/(p + n) * B(p2/(p2 + n2))
             if remainder < bestRemainder:
                 bestRemainder = remainder
-                bestSplit = exs[a].iloc[i]
+                bestSplit = split
     
     return bestRemainder, bestSplit
 
@@ -147,15 +161,21 @@ def importance(atr, exs, res):
     p = vals[1]
     n = vals[0]
     ent = B(p/(p + n))
+    print("atr")
+    print(atr)
     
     bestGain = float('-inf')
     bestAtr = None
     split = None
     for a in atr:
         remainder = 0
-        print(str(exs[a].dtype))
+        bestSplit = None
+        #print(str(exs[a].dtype))
         if str(exs[a].dtype) != 'category':
-            remainder, split = findBestSplit(a, res, exs, n, p)
+            remainder, bestSplit = findBestSplit(a, res, exs, n, p)
+            if a == 'Fare':
+                print("faresplit2")
+                print(split)
         else:
             counts = exs.groupby(res)[a].value_counts().unstack(fill_value=0).stack()
             for v in exs[a].cat.categories:
@@ -170,6 +190,7 @@ def importance(atr, exs, res):
         if gain > bestGain:
             bestGain = gain
             bestAtr = a
+            split = bestSplit
 
     return bestAtr, split
 
@@ -178,6 +199,7 @@ def importance(atr, exs, res):
 
 def DecisionTreeLearning(examples, attributes, response, parent_examples = None):
     '''Returns a decision tree based on examples'''
+    print(attributes)
     if examples.empty: 
         return plurVal(parent_examples[response])
     elif allEqual(examples[response]): 
@@ -186,6 +208,9 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
         return plurVal(examples[response])
     else:
         A, split = importance(attributes, examples, response)
+        print("bestAttribute:")
+        print(A)
+        print(split)
         attributes.remove(A)
         tree = None
         if str(examples[A].dtype) == 'category': # A is categorical
@@ -196,23 +221,29 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
                 subtree = DecisionTreeLearning(exs, attr, response, examples)
                 tree.addBranch(v, subtree)
         else:
+            if A == 'Fare':
+                print("faresplit")
+                print(split)
             tree = DecisionTree(A, 'cont', split)
-            print(A)
+            #print("split variable:")
+            #print(A)
             exs1 = examples.loc[examples[A] > split] 
             attr1 = attributes.copy()
             subtree = DecisionTreeLearning(exs1, attr1, response, examples)
-            tree.addBranch('>=' + str(split), subtree)
+            tree.addBranch('<=' + str(split), subtree)
 
             exs2 = examples.loc[examples[A] < split] 
             attr2 = attributes.copy()
             subtree = DecisionTreeLearning(exs2, attr2, response, examples)
-            tree.addBranch('<' + str(split), subtree)
+            tree.addBranch('>' + str(split), subtree)
 
         return tree
 
 
 
 train = pd.read_csv("train.csv")
+
+print(train['Fare'].isnull().values.any())
 
 X = train.loc[:, ['Pclass', 'Sex', 'Embarked', 'Fare', 'SibSp', 'Survived']]
 X.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']] = X.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']].astype("category")
@@ -244,8 +275,8 @@ def error(tree, test, attributes):
     
     return t/(t + f)
 
-print("at")
-print(attributes)
+
+
 print(error(tree, test, attributes))
 
 
