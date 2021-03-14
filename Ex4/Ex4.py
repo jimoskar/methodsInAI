@@ -74,7 +74,8 @@ class DecisionTree:
 
         
     def plotTree(self, name):
-        ids = [i for i in range(100)]
+        '''Plots the decision tree using graphviz'''
+        ids = [i for i in range(150)]
         parentId = ids.pop()
         graph = Digraph(comment='Decision Tree')
         graph.node(str(parentId), self.label)
@@ -92,6 +93,7 @@ class DecisionTree:
 
 
 def plurVal(data):
+    '''Finds the maximum occuring value'''
     return data.value_counts().idxmax()
 
 def allEqual(s):
