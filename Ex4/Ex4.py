@@ -34,8 +34,8 @@ class DecisionTree:
             else:
                 return self.branches[index].predict(observation)
         else: # attribute is continuous
-            if index >= self.split:
-                index = '>=' + str(self.split)
+            if index > self.split:
+                index = '>' + str(self.split)
                 if not isinstance(self.branches[index], DecisionTree):
                     return self.branches[index]
                 else:
@@ -107,40 +107,33 @@ def B(q):
 
 def findBestSplit(a, res, exs, p, n):
     exs = exs.sort_values(by = [a])
+    if a == 'SibSp':
+            print("examples")
+            print(exs)
     bestSplit = None
     bestRemainder = float('inf')
-    if a == "Fare":
-        #print(exs)
-        pass
     for i in range(1,exs.shape[0]):
         remainder = 0
-        split = exs[a].iloc[i]
-        if exs[res].iloc[i] != exs[res].iloc[i - 1]:
-            p1 = exs.loc[(exs[a] <= split) & (exs[res] == 1)].shape[0]
+        split = None
+        if (exs[res].iloc[i] != exs[res].iloc[i - 1]) and (exs[a].iloc[i] != exs[a].iloc[i - 1]):
+            split = (exs[a].iloc[i] + exs[a].iloc[i -1 ])/2.0
+            p1 = exs.loc[(exs[a] < split) & (exs[res] == 1)].shape[0]
             p2 = exs.loc[(exs[a] > split) & (exs[res] == 1)].shape[0]
-            n1 = exs.loc[(exs[a] <= split) & (exs[res] == 0)].shape[0]
+            n1 = exs.loc[(exs[a] < split) & (exs[res] == 0)].shape[0]
             n2 = exs.loc[(exs[a] > split) & (exs[res] == 0)].shape[0]
-            '''
-            if a == 'Fare':
-                print("split")
-                print(split)
-                print(p1)
-                print(p2)
-                print(n1)
-                print(n2)
-                '''
-            if (p1 == 0 and n1 == 0)or (p2 == 0 and n2 == 0):
-                continue
-            '''
+            
             if a == 'SibSp':
                 print("split")
                 print(split)
-                print(exs)
                 print(p1)
                 print(p2)
                 print(n1)
                 print(n2)
-            '''
+                
+            if (p1 == 0 and n1 == 0)or (p2 == 0 and n2 == 0):
+                continue
+         
+            
             remainder = (p1 + n1)/(p + n) * B(p1/(p1 + n1)) + (p2 + n2)/(p + n) * B(p2/(p2 + n2))
             if remainder < bestRemainder:
                 bestRemainder = remainder
@@ -170,12 +163,8 @@ def importance(atr, exs, res):
     for a in atr:
         remainder = 0
         bestSplit = None
-        #print(str(exs[a].dtype))
         if str(exs[a].dtype) != 'category':
             remainder, bestSplit = findBestSplit(a, res, exs, n, p)
-            if a == 'Fare':
-                print("faresplit2")
-                print(split)
         else:
             counts = exs.groupby(res)[a].value_counts().unstack(fill_value=0).stack()
             for v in exs[a].cat.categories:
@@ -208,6 +197,11 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
         return plurVal(examples[response])
     else:
         A, split = importance(attributes, examples, response)
+        
+        if A == None:
+            return plurVal(examples[response])
+
+    
         print("bestAttribute:")
         print(A)
         print(split)
@@ -221,16 +215,14 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
                 subtree = DecisionTreeLearning(exs, attr, response, examples)
                 tree.addBranch(v, subtree)
         else:
-            if A == 'Fare':
-                print("faresplit")
-                print(split)
+
             tree = DecisionTree(A, 'cont', split)
             #print("split variable:")
             #print(A)
             exs1 = examples.loc[examples[A] > split] 
             attr1 = attributes.copy()
             subtree = DecisionTreeLearning(exs1, attr1, response, examples)
-            tree.addBranch('<=' + str(split), subtree)
+            tree.addBranch('<' + str(split), subtree)
 
             exs2 = examples.loc[examples[A] < split] 
             attr2 = attributes.copy()
