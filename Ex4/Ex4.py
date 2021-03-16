@@ -1,21 +1,13 @@
-### Exercise 4 in Methods in AI
+### Exercise 4 in Methods in AI by Jim Totland
 
 import pandas as pd
 import numpy as np
 from graphviz import Digraph
 from pandas.core.series import Series
-from sklearn.tree import DecisionTreeClassifier
 import math
 
 
-
-
-
-#print(xCat.head())
-# Continuous: Age, Fare
-# Irrelevant: Name, Cabin, Ticket
-
-class DecisionTree:
+class DecisionTree: # Could just as well have been called DecisionNode.
     def __init__(self, A, type = 'disc', split = None):
         self.label = A
         self.branches = dict()
@@ -26,6 +18,7 @@ class DecisionTree:
         self.branches[value] = b
 
     def predict(self, observation):
+        '''Predict the classification og observation'''
         index = observation[self.label]
         if self.type == 'disc': # attribute is categorical/discrete
             if not isinstance(self.branches[index], DecisionTree):
@@ -47,10 +40,6 @@ class DecisionTree:
                     return self.branches[index].predict(observation)
 
 
-
-
-
-
     def printTree(self):
         print(str(self.label) + ": [")
         for key, value in self.branches.items():
@@ -61,6 +50,7 @@ class DecisionTree:
         print("]")
     
     def addToPlot(self, parent, edge, graph, ids):
+        '''Subroutine in plotTree'''
         parentId = ids.pop()
         graph.node(str(parentId), self.label)
         graph.edge(str(parent), str(parentId), label = str(edge))
@@ -75,7 +65,7 @@ class DecisionTree:
         
     def plotTree(self, name):
         '''Plots the decision tree using graphviz'''
-        ids = [i for i in range(150)]
+        ids = [i for i in range(150)] # Unique ids for each node
         parentId = ids.pop()
         graph = Digraph(comment='Decision Tree')
         graph.node(str(parentId), self.label)
@@ -89,14 +79,13 @@ class DecisionTree:
 
         graph.render(name + '.gv', view=True)
             
-        
-
 
 def plurVal(data):
     '''Finds the maximum occuring value'''
     return data.value_counts().idxmax()
 
 def allEqual(s):
+    '''Checks if all elements in a are equal'''
     a = s.to_numpy() 
     return (a[0] == a).all()
 
@@ -107,53 +96,39 @@ def B(q):
     return -( q * math.log(q, 2) + (1 - q) * math.log(1 - q, 2))
 
 def findBestSplit(a, res, exs, p, n):
+    '''Finds the best splitting point for continous variables'''
     exs = exs.sort_values(by = [a])
-
-    '''
-    if a == 'SibSp':
-            print("examples")
-            print(exs)
-    '''
     bestSplit = None
     bestRemainder = float('inf')
+
     for i in range(1,exs.shape[0]):
         remainder = 0
         split = None
+
         if (exs[res].iloc[i] != exs[res].iloc[i - 1]) and (exs[a].iloc[i] != exs[a].iloc[i - 1]):
             split = (exs[a].iloc[i] + exs[a].iloc[i -1 ])/2.0
             p1 = exs.loc[(exs[a] < split) & (exs[res] == 1)].shape[0]
             p2 = exs.loc[(exs[a] > split) & (exs[res] == 1)].shape[0]
             n1 = exs.loc[(exs[a] < split) & (exs[res] == 0)].shape[0]
             n2 = exs.loc[(exs[a] > split) & (exs[res] == 0)].shape[0]
-            '''
-            if a == 'SibSp':
-                print("split")
-                print(split)
-                print(p1)
-                print(p2)
-                print(n1)
-                print(n2)
-             '''   
+          
             if (p1 == 0 and n1 == 0)or (p2 == 0 and n2 == 0):
                 continue
          
-            
             remainder = (p1 + n1)/(p + n) * B(p1/(p1 + n1)) + (p2 + n2)/(p + n) * B(p2/(p2 + n2))
+
             if remainder < bestRemainder:
                 bestRemainder = remainder
                 bestSplit = split
-    
+
     return bestRemainder, bestSplit
 
 
 
 
 
-
-
-
-
 def importance(atr, exs, res):
+    '''Uses entropy to calculate importance.'''
     vals = exs[res].value_counts()
     p = vals[1]
     n = vals[0]
@@ -165,9 +140,11 @@ def importance(atr, exs, res):
     for a in atr:
         remainder = 0
         bestSplit = None
-        if str(exs[a].dtype) != 'category':
+
+        if str(exs[a].dtype) != 'category': # The attribute is continuous
             remainder, bestSplit = findBestSplit(a, res, exs, n, p)
-        else:
+
+        else: # The attribute is categorical 
             counts = exs.groupby(res)[a].value_counts().unstack(fill_value=0).stack()
             for v in exs[a].cat.categories:
                 if v not in counts.index.levels[1]:
@@ -199,13 +176,12 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
     else:
         A, split = importance(attributes, examples, response)
         
-        if A == None:
+        if A == None: # There is no suitable split for a continous variable
             return plurVal(examples[response])
-
-    
-    
+        
         attributes.remove(A)
         tree = None
+
         if str(examples[A].dtype) == 'category': # A is categorical
             tree = DecisionTree(A)
             for v in examples[A].cat.categories:
@@ -213,30 +189,27 @@ def DecisionTreeLearning(examples, attributes, response, parent_examples = None)
                 attr = attributes.copy()
                 subtree = DecisionTreeLearning(exs, attr, response, examples)
                 tree.addBranch(v, subtree)
-        else:
 
+        else: # A is continuous
             tree = DecisionTree(A, 'cont', split)
-            #print("split variable:")
-            #print(A)
+
             exs1 = examples.loc[examples[A] > split] 
-            attr1 = attributes.copy()
-            subtree = DecisionTreeLearning(exs1, attr1, response, examples)
-            tree.addBranch('<' + str(split), subtree)
+            subtree = DecisionTreeLearning(exs1, attributes.copy(), response, examples)
+            tree.addBranch('>' + str(split), subtree)
 
             exs2 = examples.loc[examples[A] < split] 
-            attr2 = attributes.copy()
-            subtree = DecisionTreeLearning(exs2, attr2, response, examples)
-            tree.addBranch('>' + str(split), subtree)
+            subtree = DecisionTreeLearning(exs2, attributes.copy(), response, examples)
+            tree.addBranch('<' + str(split), subtree)
 
         return tree
 
 def error(tree, test, attributes):
-    '''Returns the test error.'''
+    '''Returns the test accuracy.'''
     obs = test.loc[:, attributes]
     resp = test.loc[:, 'Survived']
     n = resp.shape[0]
-    t = 0
-    f = 0
+    t = 0 # correct classifations
+    f = 0 # wrong classifications
     for i in range(n):
         pred = tree.predict(obs.iloc[i])
         if pred == resp.iloc[i]:
@@ -255,6 +228,7 @@ def one_a():
     '''Assembles and plots the decision tree for 1a) and prints the test error.'''
 
     trainExamples = train.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']]
+
     # Make the right attributes categorical:
     trainExamples.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']] = trainExamples.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']].astype("category")
     attributes = ['Pclass', 'Sex', 'Embarked']
@@ -262,8 +236,10 @@ def one_a():
     tree = DecisionTreeLearning(trainExamples, attributes.copy(), 'Survived')
     tree.plotTree('one_a')
 
-    print("Test error rate: ")
+    print("Test accuracy: ")
     print(error(tree, test, attributes))
+
+
 
 
 def one_b():
@@ -277,7 +253,7 @@ def one_b():
     tree = DecisionTreeLearning(trainExamples, attributes.copy(), 'Survived')
     tree.plotTree('one_b')
 
-    print("Test error rate:")
+    print("Test accuracy:")
     print(error(tree, test, attributes))
 
 
