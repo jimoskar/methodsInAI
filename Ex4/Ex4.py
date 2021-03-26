@@ -221,11 +221,12 @@ def error(tree, test, attributes):
 
 
 
-train = pd.read_csv("train.csv")
-test = pd.read_csv('test.csv')
+
 
 def one_a():
     '''Assembles and plots the decision tree for 1a) and prints the test error.'''
+    train = pd.read_csv("train.csv")
+    test = pd.read_csv('test.csv')
 
     trainExamples = train.loc[:, ['Pclass', 'Sex', 'Embarked', 'Survived']]
 
@@ -238,12 +239,16 @@ def one_a():
 
     print("Test accuracy: ")
     print(error(tree, test, attributes))
+    print("Train accuracy:")
+    print(error(tree, train, attributes))
 
 
 
 
 def one_b():
     '''Assembles and plots the decision tree for 1b) and prints the test error.'''
+    train = pd.read_csv("train.csv")
+    test = pd.read_csv('test.csv')
 
     trainExamples = train.loc[:, ['Pclass', 'Sex', 'Embarked', 'Fare', 'SibSp', 'Parch', 'Survived']]
     # Make the right attributes categorical:
@@ -255,6 +260,8 @@ def one_b():
 
     print("Test accuracy:")
     print(error(tree, test, attributes))
+    print("Train accuracy:")
+    print(error(tree, train, attributes))
 
 
 def restaurantExample():
@@ -284,7 +291,7 @@ def restaurantExample():
 
 #one_a()
 #restaurantExample()
-#one_b()
+one_b()
 
 
 

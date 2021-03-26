@@ -12,7 +12,9 @@ def allEqual(s):
 def plurVal(data):
     return data.value_counts().idxmax()    
 
-ds = pd.DataFrame({'A':[3,1,3], 'B':[1,1,1]})
+ds = pd.DataFrame({'A':[1,1,3,1], 'B':[1,1,1,1]})
+print("here")
+print(plurVal(ds['A']))
 
 df = pd.read_csv("test.csv")
 #print(df.head())
