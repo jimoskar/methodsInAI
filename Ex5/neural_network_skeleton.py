@@ -5,6 +5,15 @@ import numpy as np
 import pickle
 import os
 
+class Neuron:
+    def __init__(self, input_dim):
+       self.weights = np.random.rand(input_dim)
+       self.inn = None 
+
+
+class Layer:
+    def __init__(self, size, input_dim):
+        self.neurons = [Neuron(input_dim) for i in range(size)]
 
 class NeuralNetwork:
     """Implement/make changes to places in the code that contains #TODO."""
@@ -41,8 +50,14 @@ class NeuralNetwork:
 
         # TODO: Make necessary changes here. For example, assigning the arguments "input_dim" and "hidden_layer" to
         # variables and so forth.
-        self.hidden_layer = hidden_layer
         self.input_dim = input_dim
+
+        if hidden_layer:
+            self.layers = [Layer(self.hidden_units, self.input_dim), Layer(1, self.input_dim)]
+        else:
+            self.layers = Layer(1, self.input_dim)
+
+        
 
     def load_data(self, file_path: str = os.path.join(os.getcwd(), 'data_breast_cancer.p')) -> None:
         """
@@ -82,10 +97,12 @@ class NeuralNetwork:
         w = np.random.rand(self.input_dim)
         for i in range(self.epochs):
             for x in self.x_train:
-                inn = np.dot(w, x)
-                a = self.sigma(inn)
-
-
+                a = x
+                for l in self.layers:
+                    for n in l.neurons:
+                        inn = np.dot(n.weights, a)
+                        n.inn = inn
+                        a = self.sigma(inn)
 
 
         pass
