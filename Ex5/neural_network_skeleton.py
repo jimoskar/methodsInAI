@@ -10,6 +10,7 @@ class Neuron:
        self.weights = np.random.rand(output_dim)
        self.inp = None 
        self.a = None
+       self.delta = None
 
 
 class Layer:
@@ -101,12 +102,36 @@ class NeuralNetwork:
                 t = self.y_train[i]
                 for j in range(self.x_train.shape[1]):
                     self.layers[0].neurons[i].a = self.x_train[i, j]
-                for l in self.layers[1:]:
-                    for n in l.neurons:
-                        inp = np.dot(n.weights, a)
-                        a = self.sigma(inp)
-                        n.inp = inp
-                        n.a = a
+
+                # Forward feeding
+                for k in range(len(self.layers[1:])):
+                    for j in range(len(self.layers[k + 1].neurons)):
+                        inp = 0
+                        for ni in self.layers[k - 1].neurons:
+                            inp += ni.weights[j] * ni.a
+
+                        self.layers[k].neurons[j].inp = inp
+                        self.layers[k].neurons[j].a = self.sigma(inp)
+                
+                # Back-propagation
+                for n in self.layers[-1].neurons:
+                    n.delta = self.sigma_der(n.a) * (t - n.a)
+                if self.hidden_units:
+                    for n in self.layers[1]:
+                        sum = 0
+                        for i in range(len(self.layers[-1].neurons)):
+                            sum += n.weights[i] * self.layers[-1].neurons[i]
+                        n.delta = self.sigma_der(n.a) * sum
+                
+                for i in range(len(self.layers)):
+                    for n in self.layers[i]:
+                        for j in range(len(n.weights)):
+                            n.weights[j] += self.lr * n.a * self.layers[i + 1].neurons[j].delta
+
+                
+                
+
+            
                 
                 #delta_output = [] # np.zeros(len(self.layers[-1]))
                 #for n in self.layers[-1].neurons:
