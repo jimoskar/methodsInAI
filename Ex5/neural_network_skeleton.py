@@ -6,14 +6,15 @@ import pickle
 import os
 
 class Neuron:
-    def __init__(self, input_dim):
-       self.weights = np.random.rand(input_dim)
-       self.inn = None 
+    def __init__(self, output_dim):
+       self.weights = np.random.rand(output_dim)
+       self.inp = None 
+       self.a = None
 
 
 class Layer:
-    def __init__(self, size, input_dim):
-        self.neurons = [Neuron(input_dim) for i in range(size)]
+    def __init__(self, size, output_dim):
+        self.neurons = [Neuron(output_dim) for i in range(size)]
 
 class NeuralNetwork:
     """Implement/make changes to places in the code that contains #TODO."""
@@ -53,9 +54,9 @@ class NeuralNetwork:
         self.input_dim = input_dim
 
         if hidden_layer:
-            self.layers = [Layer(self.hidden_units, self.input_dim), Layer(1, self.input_dim)]
+            self.layers = [Layer(self.input_dim, self.hidden_units), Layer(self.hidden_units, 1), Layer(1, 0)]
         else:
-            self.layers = Layer(1, self.input_dim)
+            self.layers = [Layer(self.input_dim, self.hidden_units), Layer(1, 0)]
 
         
 
@@ -96,13 +97,26 @@ class NeuralNetwork:
 
         w = np.random.rand(self.input_dim)
         for i in range(self.epochs):
-            for x in self.x_train:
-                a = x
-                for l in self.layers:
+            for i in range(self.x_train.shape[0]):
+                t = self.y_train[i]
+                for j in range(self.x_train.shape[1]):
+                    self.layers[0].neurons[i].a = self.x_train[i, j]
+                for l in self.layers[1:]:
                     for n in l.neurons:
-                        inn = np.dot(n.weights, a)
-                        n.inn = inn
-                        a = self.sigma(inn)
+                        inp = np.dot(n.weights, a)
+                        a = self.sigma(inp)
+                        n.inp = inp
+                        n.a = a
+                
+                #delta_output = [] # np.zeros(len(self.layers[-1]))
+                #for n in self.layers[-1].neurons:
+                    #dk = self.sigma_der(n.a)
+                    #delta_output.append() 
+                o = self.layers[-1].neurons[0] 
+                delta_ouptut = self.sigma_der(o) * (t - o)
+                for n in self.layers[0]:
+                    dh = self.sigma_der(n.a) *
+                    
 
 
         pass
