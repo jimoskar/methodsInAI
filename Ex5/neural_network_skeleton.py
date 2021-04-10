@@ -15,7 +15,11 @@ class Neuron:
 
 class Layer:
     def __init__(self, size, output_dim):
-        self.neurons = [Neuron(output_dim) for i in range(size)]
+        self.W = np.random.rand((size, output_dim))
+        self.bias = np.random.rand(size)
+        self.b = self.bias * np.ones(output_dim)
+        self.inp = None # Input to layer.
+        self.a = None # Activation of input to layer.
 
 class NeuralNetwork:
     """Implement/make changes to places in the code that contains #TODO."""
@@ -96,26 +100,19 @@ class NeuralNetwork:
         # Line 27 in Figure 18.24 says "return network". Here you do not need to return anything as we are coding
         # the neural network as a class
 
-        w = np.random.rand(self.input_dim)
         for i in range(self.epochs):
             for i in range(self.x_train.shape[0]):
                 t = self.y_train[i]
-                for j in range(self.x_train.shape[1]):
-                    self.layers[0].neurons[i].a = self.x_train[i, j]
 
                 # Forward feeding
-                for k in range(len(self.layers[1:])):
-                    for j in range(len(self.layers[k + 1].neurons)):
-                        inp = 0
-                        for ni in self.layers[k - 1].neurons:
-                            inp += ni.weights[j] * ni.a
+                self.layers[0].a = self.x_train[i, :]
+                for i in range(1, len(self.layers)):
+                    inp = self.layers[i - 1].W @ self.layers[i - 1].a + self.layers[i - 1].b
+                    self.inp = inp
+                    self.layers[i].a = self.sigma(inp)
 
-                        self.layers[k].neurons[j].inp = inp
-                        self.layers[k].neurons[j].a = self.sigma(inp)
-                
                 # Back-propagation
-                for n in self.layers[-1].neurons:
-                    n.delta = self.sigma_der(n.a) * (t - n.a)
+                delta_output = self.sigma_der(self.layers[-1].inp) @ self.layers[-1].b
                 if self.hidden_units:
                     for n in self.layers[1]:
                         sum = 0
