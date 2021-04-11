@@ -15,11 +15,12 @@ class Neuron:
 
 class Layer:
     def __init__(self, size, output_dim):
-        self.W = np.random.rand((size, output_dim))
-        self.bias = np.random.rand(size)
-        self.b = self.bias * np.ones(output_dim)
+        self.size = size
+        self.W = np.random.randn(size, output_dim)
+        self.b = np.random.randn(output_dim)
         self.inp = None # Input to layer.
         self.a = None # Activation of input to layer.
+        self.delta = None # The delta used in back-prop.
 
 class NeuralNetwork:
     """Implement/make changes to places in the code that contains #TODO."""
@@ -101,47 +102,48 @@ class NeuralNetwork:
         # the neural network as a class
 
         for i in range(self.epochs):
-            for i in range(self.x_train.shape[0]):
-                t = self.y_train[i]
+            counter = 0
+            for j, x in enumerate(self.x_train):
+                print("COUNT:")
+                print(counter)
+                counter += 1
+                t = self.y_train[j]
 
                 # Forward feeding
-                self.layers[0].a = self.x_train[i, :]
-                for i in range(1, len(self.layers)):
-                    inp = self.layers[i - 1].W @ self.layers[i - 1].a + self.layers[i - 1].b
-                    self.inp = inp
-                    self.layers[i].a = self.sigma(inp)
+                self.layers[0].a = self.layers[0].inp = x
+                for k in range(1, len(self.layers)):
+                    #print(self.layers[k - 1].W.shape)
+                    #print(self.layers[k - 1].a.shape)
+                    #print(self.layers[k-1].a)
+                    inp = self.layers[k - 1].W.T @ self.layers[k - 1].a + self.layers[k - 1].b
+                    self.layers[k].inp = inp
+                    self.layers[k].a = self.sigma(inp)
 
                 # Back-propagation
-                delta_output = self.sigma_der(self.layers[-1].inp) @ self.layers[-1].b
-                if self.hidden_units:
-                    for n in self.layers[1]:
-                        sum = 0
-                        for i in range(len(self.layers[-1].neurons)):
-                            sum += n.weights[i] * self.layers[-1].neurons[i]
-                        n.delta = self.sigma_der(n.a) * sum
-                
-                for i in range(len(self.layers)):
-                    for n in self.layers[i]:
-                        for j in range(len(n.weights)):
-                            n.weights[j] += self.lr * n.a * self.layers[i + 1].neurons[j].delta
+                self.layers[-1].delta = self.sigma_der(self.layers[-1].inp) * (t - self.layers[-1].a)
+                bias_delta = self.sigma_der(self.layers[-1].inp) * (t- self.layers[-1].a)
 
-                
-                
+              
+                for l in range(len(self.layers) - 2, -1, -1):
+                    # Updating weights
+                    #print(l)
+                    #print(self.layers[l].W.shape)
+                    #print(self.layers[l].a.shape)
+                    #print(self.layers[l + 1].delta.shape)
+                    delta_mat = np.tile(self.layers[l + 1].delta, (self.layers[l].size, 1))
+                    a_mat = np.tile(self.layers[l].a, (self.layers[l].size, 1))
 
-            
-                
-                #delta_output = [] # np.zeros(len(self.layers[-1]))
-                #for n in self.layers[-1].neurons:
-                    #dk = self.sigma_der(n.a)
-                    #delta_output.append() 
-                o = self.layers[-1].neurons[0] 
-                delta_ouptut = self.sigma_der(o) * (t - o)
-                for n in self.layers[0]:
-                    dh = self.sigma_der(n.a) *
-                    
+                    self.layers[l].W += self.lr * a_mat.T @ delta_mat  
+                    # Updating bias
+                    #print(self.layers[l].b.shape)
+                    #print(self.layers[l].inp.shape)
+
+                    self.layers[l].b -= self.lr * bias_delta
+                    if l > 0:
+                        self.layers[l].delta = self.sigma_der(self.layers[l].inp) * self.layers[l].W * self.layers[l + 1].delta
+                        bias_delta *= self.sigma_der(self.layers[l].inp)
 
 
-        pass
 
     def predict(self, x: np.ndarray) -> float:
         """
