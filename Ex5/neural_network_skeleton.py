@@ -62,7 +62,7 @@ class NeuralNetwork:
         if hidden_layer:
             self.layers = [Layer(self.input_dim, self.hidden_units), Layer(self.hidden_units, 1), Layer(1, 0)]
         else:
-            self.layers = [Layer(self.input_dim, self.hidden_units), Layer(1, 0)]
+            self.layers = [Layer(self.input_dim, 1), Layer(1, 0)]
 
         
 
@@ -104,8 +104,8 @@ class NeuralNetwork:
         for i in range(self.epochs):
             counter = 0
             for j, x in enumerate(self.x_train):
-                print("COUNT:")
-                print(counter)
+                #print("COUNT:")
+                #print(counter)
                 counter += 1
                 t = self.y_train[j]
 
@@ -132,6 +132,7 @@ class NeuralNetwork:
                     #print(self.layers[l + 1].delta.shape)
                     delta_mat = np.tile(self.layers[l + 1].delta, (self.layers[l].size, 1))
                     a_mat = np.tile(self.layers[l].a, (self.layers[l].size, 1))
+                
 
                     self.layers[l].W += self.lr * a_mat.T @ delta_mat  
                     # Updating bias
@@ -140,8 +141,8 @@ class NeuralNetwork:
 
                     self.layers[l].b -= self.lr * bias_delta
                     if l > 0:
-                        self.layers[l].delta = self.sigma_der(self.layers[l].inp) * self.layers[l].W * self.layers[l + 1].delta
-                        bias_delta *= self.sigma_der(self.layers[l].inp)
+                        self.layers[l].delta = self.sigma_der(self.layers[l].inp) * self.layers[l].W[:,0] * self.layers[l + 1].delta
+                        bias_delta = bias_delta * np.ones(self.layers[l].size) * self.sigma_der(self.layers[l].inp)
 
 
 
@@ -153,7 +154,12 @@ class NeuralNetwork:
         :return: A float specifying probability which is bounded [0, 1].
         """
         # TODO: Implement the forward pass.
-        return 1  # Placeholder, remove when implementing
+
+        for l in self.layers[:-1]:
+            x = self.sigma(l.W.T @ x + l.b)
+     
+        return x
+
 
 
 class TestAssignment5(unittest.TestCase):
@@ -193,6 +199,7 @@ class TestAssignment5(unittest.TestCase):
 
         self.network = self.nn_class(self.n_features, False)
         accuracy = self.get_accuracy()
+        print(accuracy)
         self.assertTrue(accuracy > self.threshold,
                         'This implementation is most likely wrong since '
                         f'the accuracy ({accuracy}) is less than {self.threshold}.')
@@ -202,6 +209,7 @@ class TestAssignment5(unittest.TestCase):
 
         self.network = self.nn_class(self.n_features, True)
         accuracy = self.get_accuracy()
+        print(accuracy)
         self.assertTrue(accuracy > self.threshold,
                         'This implementation is most likely wrong since '
                         f'the accuracy ({accuracy}) is less than {self.threshold}.')
