@@ -5,19 +5,13 @@ import numpy as np
 import pickle
 import os
 
-class Neuron:
-    def __init__(self, output_dim):
-       self.weights = np.random.rand(output_dim)
-       self.inp = None 
-       self.a = None
-       self.delta = None
-
-
 class Layer:
+    """Class for representing a layer in the network. It contains all the paramaters associated with a given layer."""
     def __init__(self, size, output_dim):
-        self.size = size
-        self.W = np.random.randn(size, output_dim)
-        self.b = np.random.randn(output_dim)
+        """Size is the number of neurons in the layer. Output_dim is the number of neurons in the 'next' layer."""
+        self.size = size # Number of neurons in this layer.
+        self.W = np.random.randn(size, output_dim) # Weights 'going out' from this layer. This is a matrix where row i represents the weights 'going out' from neuton i in the layer.
+        self.b = np.random.randn(output_dim) # Bias 'going out' of from this layer.
         self.inp = None # Input to layer.
         self.a = None # Activation of input to layer.
         self.delta = None # The delta used in back-prop.
@@ -55,8 +49,6 @@ class NeuralNetwork:
         self.x_train, self.y_train = None, None
         self.x_test, self.y_test = None, None
 
-        # TODO: Make necessary changes here. For example, assigning the arguments "input_dim" and "hidden_layer" to
-        # variables and so forth.
         self.input_dim = input_dim
 
         if hidden_layer:
@@ -83,9 +75,11 @@ class NeuralNetwork:
             self.x_test, self.y_test = data['x_test'], data['y_test']
     
     def sigma(self, x):
+        """The activation function used in this network."""
         return 1/(1 + np.exp(-x))
     
     def sigma_der(self, x):
+        """The derivative of the activation function."""
         return self.sigma(x) * (1 - self.sigma(x))
 
     def train(self) -> None:
@@ -100,43 +94,29 @@ class NeuralNetwork:
         # the neural network as a class
 
         for i in range(self.epochs):
-            counter = 0
+            # Loop through every example in the training set:
             for j, x in enumerate(self.x_train):
-                #print("COUNT:")
-                #print(counter)
-                counter += 1
-                t = self.y_train[j]
+                t = self.y_train[j] # The true response value for the given example.
 
-                # Forward feeding
+                # Forward feeding.
                 self.layers[0].a = self.layers[0].inp = x
                 for k in range(1, len(self.layers)):
-                    #print(self.layers[k - 1].W.shape)
-                    #print(self.layers[k - 1].a.shape)
-                    #print(self.layers[k-1].a)
+
                     inp = self.layers[k - 1].W.T @ self.layers[k - 1].a + self.layers[k - 1].b
                     self.layers[k].inp = inp
                     self.layers[k].a = self.sigma(inp)
 
-                # Back-propagation
+                # Back-propagation.
                 self.layers[-1].delta = self.sigma_der(self.layers[-1].inp) * (t - self.layers[-1].a)
                 bias_delta = self.sigma_der(self.layers[-1].inp) * (t- self.layers[-1].a)
-
-              
                 for l in range(len(self.layers) - 2, -1, -1):
-                    # Updating weights
-                    #print(l)
-                    #print(self.layers[l].W.shape)
-                    #print(self.layers[l].a.shape)
-                    #print(self.layers[l + 1].delta.shape)
+
+                    # Updating weights.
                     delta_mat = np.tile(self.layers[l + 1].delta, (self.layers[l].size, 1))
                     a_mat = np.tile(self.layers[l].a, (self.layers[l].size, 1))
-                
+                    self.layers[l].W += self.lr * a_mat.T @ delta_mat
 
-                    self.layers[l].W += self.lr * a_mat.T @ delta_mat  
-                    # Updating bias
-                    #print(self.layers[l].b.shape)
-                    #print(self.layers[l].inp.shape)
-
+                    # Updating bias.
                     self.layers[l].b -= self.lr * bias_delta
                     if l > 0:
                         self.layers[l].delta = self.sigma_der(self.layers[l].inp) * self.layers[l].W[:,0] * self.layers[l + 1].delta
@@ -151,7 +131,6 @@ class NeuralNetwork:
         :param x: A single example (vector) with shape = (number of features)
         :return: A float specifying probability which is bounded [0, 1].
         """
-        # TODO: Implement the forward pass.
 
         for l in self.layers[:-1]:
             x = self.sigma(l.W.T @ x + l.b)
@@ -196,7 +175,7 @@ class TestAssignment5(unittest.TestCase):
 
         self.network = self.nn_class(self.n_features, False)
         accuracy = self.get_accuracy()
-        print(accuracy)
+        #print(f"Accuracy with perceptron: {accuracy}.")
         self.assertTrue(accuracy > self.threshold,
                         'This implementation is most likely wrong since '
                         f'the accuracy ({accuracy}) is less than {self.threshold}.')
@@ -206,7 +185,7 @@ class TestAssignment5(unittest.TestCase):
 
         self.network = self.nn_class(self.n_features, True)
         accuracy = self.get_accuracy()
-        print(accuracy)
+        #print(f"Accuracy with one hidden layer: {accuracy}.")
         self.assertTrue(accuracy > self.threshold,
                         'This implementation is most likely wrong since '
                         f'the accuracy ({accuracy}) is less than {self.threshold}.')
