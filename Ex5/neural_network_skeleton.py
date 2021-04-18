@@ -15,7 +15,12 @@ class Neuron:
 
 class Layer:
     def __init__(self, size, output_dim):
-        self.neurons = [Neuron(output_dim) for i in range(size)]
+        self.size = size
+        self.W = np.random.randn(size, output_dim)
+        self.b = np.random.randn(output_dim)
+        self.inp = None # Input to layer.
+        self.a = None # Activation of input to layer.
+        self.delta = None # The delta used in back-prop.
 
 class NeuralNetwork:
     """Implement/make changes to places in the code that contains #TODO."""
@@ -57,18 +62,16 @@ class NeuralNetwork:
         if hidden_layer:
             self.layers = [Layer(self.input_dim, self.hidden_units), Layer(self.hidden_units, 1), Layer(1, 0)]
         else:
-            self.layers = [Layer(self.input_dim, self.hidden_units), Layer(1, 0)]
+            self.layers = [Layer(self.input_dim, 1), Layer(1, 0)]
 
         
 
     def load_data(self, file_path: str = os.path.join(os.getcwd(), 'data_breast_cancer.p')) -> None:
         """
         Do not change anything in this method.
-
         Load data for training and testing the model.
         :param file_path: Path to the file 'data_breast_cancer.p' downloaded from Blackboard. If no arguments is given,
         the method assumes that the file is in the current working directory.
-
         The data have the following format.
                    (row, column)
         x: shape = (number of examples, number of features)
@@ -96,55 +99,50 @@ class NeuralNetwork:
         # Line 27 in Figure 18.24 says "return network". Here you do not need to return anything as we are coding
         # the neural network as a class
 
-        w = np.random.rand(self.input_dim)
         for i in range(self.epochs):
-            for i in range(self.x_train.shape[0]):
-                t = self.y_train[i]
-                for j in range(self.x_train.shape[1]):
-                    self.layers[0].neurons[i].a = self.x_train[i, j]
+            counter = 0
+            for j, x in enumerate(self.x_train):
+                #print("COUNT:")
+                #print(counter)
+                counter += 1
+                t = self.y_train[j]
 
                 # Forward feeding
-                for k in range(len(self.layers[1:])):
-                    for j in range(len(self.layers[k + 1].neurons)):
-                        inp = 0
-                        for ni in self.layers[k - 1].neurons:
-                            inp += ni.weights[j] * ni.a
+                self.layers[0].a = self.layers[0].inp = x
+                for k in range(1, len(self.layers)):
+                    #print(self.layers[k - 1].W.shape)
+                    #print(self.layers[k - 1].a.shape)
+                    #print(self.layers[k-1].a)
+                    inp = self.layers[k - 1].W.T @ self.layers[k - 1].a + self.layers[k - 1].b
+                    self.layers[k].inp = inp
+                    self.layers[k].a = self.sigma(inp)
 
-                        self.layers[k].neurons[j].inp = inp
-                        self.layers[k].neurons[j].a = self.sigma(inp)
-                
                 # Back-propagation
-                for n in self.layers[-1].neurons:
-                    n.delta = self.sigma_der(n.a) * (t - n.a)
-                if self.hidden_units:
-                    for n in self.layers[1]:
-                        sum = 0
-                        for i in range(len(self.layers[-1].neurons)):
-                            sum += n.weights[i] * self.layers[-1].neurons[i]
-                        n.delta = self.sigma_der(n.a) * sum
-                
-                for i in range(len(self.layers)):
-                    for n in self.layers[i]:
-                        for j in range(len(n.weights)):
-                            n.weights[j] += self.lr * n.a * self.layers[i + 1].neurons[j].delta
+                self.layers[-1].delta = self.sigma_der(self.layers[-1].inp) * (t - self.layers[-1].a)
+                bias_delta = self.sigma_der(self.layers[-1].inp) * (t- self.layers[-1].a)
 
-                
+              
+                for l in range(len(self.layers) - 2, -1, -1):
+                    # Updating weights
+                    #print(l)
+                    #print(self.layers[l].W.shape)
+                    #print(self.layers[l].a.shape)
+                    #print(self.layers[l + 1].delta.shape)
+                    delta_mat = np.tile(self.layers[l + 1].delta, (self.layers[l].size, 1))
+                    a_mat = np.tile(self.layers[l].a, (self.layers[l].size, 1))
                 
 
-            
-                
-                #delta_output = [] # np.zeros(len(self.layers[-1]))
-                #for n in self.layers[-1].neurons:
-                    #dk = self.sigma_der(n.a)
-                    #delta_output.append() 
-                o = self.layers[-1].neurons[0] 
-                delta_ouptut = self.sigma_der(o) * (t - o)
-                for n in self.layers[0]:
-                    dh = self.sigma_der(n.a) *
-                    
+                    self.layers[l].W += self.lr * a_mat.T @ delta_mat  
+                    # Updating bias
+                    #print(self.layers[l].b.shape)
+                    #print(self.layers[l].inp.shape)
+
+                    self.layers[l].b -= self.lr * bias_delta
+                    if l > 0:
+                        self.layers[l].delta = self.sigma_der(self.layers[l].inp) * self.layers[l].W[:,0] * self.layers[l + 1].delta
+                        bias_delta = bias_delta * np.ones(self.layers[l].size) * self.sigma_der(self.layers[l].inp)
 
 
-        pass
 
     def predict(self, x: np.ndarray) -> float:
         """
@@ -154,13 +152,17 @@ class NeuralNetwork:
         :return: A float specifying probability which is bounded [0, 1].
         """
         # TODO: Implement the forward pass.
-        return 1  # Placeholder, remove when implementing
+
+        for l in self.layers[:-1]:
+            x = self.sigma(l.W.T @ x + l.b)
+     
+        return x
+
 
 
 class TestAssignment5(unittest.TestCase):
     """
     Do not change anything in this test class.
-
     --- PLEASE READ ---
     Run the unit tests to test the correctness of your implementation.
     This unit test is provided for you to check whether this delivery adheres to the assignment instructions
@@ -194,6 +196,7 @@ class TestAssignment5(unittest.TestCase):
 
         self.network = self.nn_class(self.n_features, False)
         accuracy = self.get_accuracy()
+        print(accuracy)
         self.assertTrue(accuracy > self.threshold,
                         'This implementation is most likely wrong since '
                         f'the accuracy ({accuracy}) is less than {self.threshold}.')
@@ -203,6 +206,7 @@ class TestAssignment5(unittest.TestCase):
 
         self.network = self.nn_class(self.n_features, True)
         accuracy = self.get_accuracy()
+        print(accuracy)
         self.assertTrue(accuracy > self.threshold,
                         'This implementation is most likely wrong since '
                         f'the accuracy ({accuracy}) is less than {self.threshold}.')
